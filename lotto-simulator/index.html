@@ -1,4 +1,16 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#fbf8f7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#181214" media="(prefers-color-scheme: dark)">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="로또 1등 그 후">
+<meta name="format-detection" content="telephone=no">
 <title>로또 1등 그 후</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=IBM+Plex+Sans+KR:wght@400;500;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
@@ -24,8 +36,9 @@
 
 *{box-sizing:border-box}
 [hidden]{display:none!important}
-body{background:var(--paper);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.55;padding:0 16px 40px;word-break:keep-all;overflow-wrap:anywhere}
-button{font:inherit;color:inherit;cursor:pointer}
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+body{background:var(--paper);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.55;padding:0 max(16px,env(safe-area-inset-right,0px)) calc(40px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));word-break:keep-all;overflow-wrap:anywhere;overscroll-behavior-y:none;-webkit-tap-highlight-color:transparent;margin:0}
+button{font:inherit;color:inherit;cursor:pointer;touch-action:manipulation;-webkit-user-select:none;user-select:none}
 button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--slip);outline-offset:2px}
 h1,h2,h3{font-family:var(--display);font-weight:400;letter-spacing:.01em;text-wrap:balance;margin:0}
 .num{font-family:var(--mono);font-variant-numeric:tabular-nums}
@@ -150,6 +163,33 @@ input,select{font:inherit;color:var(--ink);background:var(--paper);border:1px so
 .verdict li{margin:4px 0}
 
 .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--paper);padding:10px 16px;border-radius:8px;font-size:14px;z-index:30;max-width:calc(100% - 32px);transition:opacity .3s}
+/* 폰: 앱처럼 상단 고정 바 + 하단 고정 진행 버튼 + 바텀 시트 모달 */
+@media (max-width:760px){
+  .strip{position:sticky;top:0;z-index:10;background:var(--paper);margin:0 -16px 12px;padding:calc(10px + env(safe-area-inset-top,0px)) 16px 10px;gap:6px 10px}
+  .strip h1{font-size:22px}
+  .ghost{padding:8px 12px}
+  input,select{font-size:16px}
+  .lede h2{font-size:28px}
+  .draw{gap:20px}
+  .slip{padding:14px}
+  .ball{width:40px;height:40px;font-size:15px}
+  .stats{position:sticky;top:var(--strip-h,60px);z-index:9;display:flex;overflow-x:auto;scrollbar-width:none;margin:-12px -16px 10px;border-radius:0;border-left:0;border-right:0;box-shadow:0 4px 12px rgba(0,0,0,.06)}
+  .stats::-webkit-scrollbar{display:none}
+  .st{padding:7px 12px;flex:0 0 auto;min-width:118px}
+  .stats .st:first-child{min-width:132px;order:-2}
+  .stats .st:last-child{order:-1}
+  .st small{font-size:10px}
+  .st b{font-size:14px}
+  .scene{border-radius:10px}
+  #vPlay{padding-bottom:84px}
+  #vPlay .controls{position:fixed;left:0;right:0;bottom:0;z-index:15;margin:0;padding:10px max(16px,env(safe-area-inset-right,0px)) calc(10px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));background:var(--panel);border-top:1px solid var(--line);box-shadow:0 -4px 16px rgba(0,0,0,.08)}
+  #vPlay .controls .btn{flex:1 1 0;padding:14px 10px}
+  .tabs button{padding:14px 6px}
+  .buy{padding:10px 12px}
+  .modal{align-items:flex-end;padding:0}
+  .dialog{border-radius:16px 16px 0 0;max-height:88vh;padding-bottom:calc(22px + env(safe-area-inset-bottom,0px))}
+  .toast{bottom:calc(90px + env(safe-area-inset-bottom,0px))}
+}
 @media (prefers-reduced-motion: reduce){.ball.drop{animation:none}.meter i{transition:none}}
 </style>
 
@@ -512,7 +552,7 @@ function afterTick(){if(S.pending)showChoice();else if(S.ended&&!S.reportSeen)sh
 function setButtons(dis){$('#m1').disabled=dis||S.ended;$('#m12').disabled=dis||S.ended}
 
 /* ---------- 모달 ---------- */
-function openModal(html){$('#dialog').innerHTML=html;$('#modal').hidden=false;const b=$('#dialog').querySelector('button');if(b)b.focus()}
+function openModal(html){$('#toast').hidden=true;$('#dialog').innerHTML=html;$('#modal').hidden=false;const b=$('#dialog').querySelector('button');if(b)b.focus()}
 function closeModal(){$('#modal').hidden=true}
 function showChoice(){
   const p=S.pending;
@@ -759,6 +799,9 @@ function caption(){
 }
 
 /* ---------- 시작 ---------- */
+// 폰에서 상단 바 높이만큼 아래에 상태 바를 고정
+function syncStrip(){document.documentElement.style.setProperty('--strip-h',$('.strip').getBoundingClientRect().height+'px')}
+new ResizeObserver(syncStrip).observe($('.strip'));
 function snapshot(){return S}
 function start(data){
   S=(data&&data.phase)?data:(load()||fresh());
@@ -767,6 +810,8 @@ function start(data){
   show();resize();requestAnimationFrame(draw);
 }
 window.claude?.hot?.snapshot?.(snapshot);
+// 앱 설치(홈 화면에 추가)용 오프라인 캐시. 지원하지 않는 환경에서는 조용히 넘어간다.
+if('serviceWorker' in navigator&&/^https?:$/.test(location.protocol)){navigator.serviceWorker.register('sw.js').catch(()=>{})}
 window.claude?.hot?.ready ? window.claude.hot.ready(start) : start(window.claude?.hot?.data ?? {});
 })();
 </script>

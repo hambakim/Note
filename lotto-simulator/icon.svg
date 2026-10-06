@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" fill="#cf2a3d"/>
+  <rect x="0" y="300" width="512" height="212" fill="#1b7aa3"/>
+  <path d="M0 300 Q128 285 256 300 T512 300" fill="none" stroke="#fff" stroke-width="8" opacity=".6"/>
+  <circle cx="256" cy="220" r="150" fill="#f5b800"/>
+  <circle cx="256" cy="220" r="150" fill="url(#g)"/>
+  <defs><radialGradient id="g" cx=".35" cy=".3" r=".8"><stop offset="0" stop-color="#fff" stop-opacity=".45"/><stop offset="1" stop-color="#000" stop-opacity=".15"/></radialGradient></defs>
+  <text x="256" y="268" text-anchor="middle" font-family="Arial Black,Arial,sans-serif" font-weight="900" font-size="150" fill="#fff">1</text>
+  <text x="256" y="455" text-anchor="middle" font-family="Arial,sans-serif" font-weight="700" font-size="64" fill="#fff" letter-spacing="6">LOTTO</text>
+</svg>

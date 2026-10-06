@@ -1,0 +1,17 @@
+{
+  "name": "로또 1등 그 후",
+  "short_name": "로또 1등 그 후",
+  "description": "로또 1등에 당첨된 뒤 바닷가 별장, 게임룸, 마당 동물을 사고 10년을 살아보는 시뮬레이션 게임",
+  "lang": "ko",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#fbf8f7",
+  "theme_color": "#cf2a3d",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
