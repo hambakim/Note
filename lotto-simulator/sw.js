@@ -1,5 +1,5 @@
 // 오프라인 캐시: 한 번 열면 인터넷 없이도 플레이 가능
-const CACHE = 'lotto-after-v2';
+const CACHE = 'lotto-after-v3';
 const FILES = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png'];
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES)).then(() => self.skipWaiting()));

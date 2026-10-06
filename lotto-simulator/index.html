@@ -90,6 +90,15 @@ h1,h2,h3{font-family:var(--display);font-weight:400;letter-spacing:.01em;text-wr
 .row span:last-child{font-family:var(--mono);font-variant-numeric:tabular-nums;text-align:right}
 .row.total{border-bottom:0;border-top:2px solid var(--ink);margin-top:6px;padding-top:12px;font-weight:700;font-size:17px}
 .row.total span:last-child{color:var(--slip)}
+.modes{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-bottom:12px}
+.mode{background:transparent;border:1.5px solid var(--line);border-radius:8px;padding:8px 4px;display:flex;flex-direction:column;align-items:center;gap:1px;line-height:1.2}
+.mode b{font-family:var(--display);font-weight:400;font-size:17px}
+.mode small{font-size:11px;color:var(--muted)}
+.mode[aria-checked="true"]{border-color:var(--slip);background:var(--slip-soft);color:var(--slip)}
+.mode[aria-checked="true"] small{color:var(--slip)}
+.custom-amt{display:flex;align-items:center;gap:8px;margin:-4px 0 12px;font-size:13px;color:var(--muted)}
+.custom-amt input{width:auto;flex:1}
+.big-tag{display:inline-block;font-size:10px;font-weight:700;color:var(--slip);border:1px solid var(--slip);border-radius:3px;padding:0 4px;margin-left:4px;vertical-align:2px}
 .fact{background:var(--slip-soft);border-radius:8px;padding:12px 14px;margin:18px 0;font-size:13.5px}
 .fact b{color:var(--slip)}
 .setup{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:14px 0 18px}
@@ -110,7 +119,7 @@ input,select{font:inherit;color:var(--ink);background:var(--paper);border:1px so
 @media (max-width:960px){.main{grid-template-columns:minmax(0,1fr)}}
 .scene{position:relative;border-radius:12px;overflow:hidden;aspect-ratio:16/10;max-width:100%;background:#9fd3ea;box-shadow:var(--shadow)}
 .scene canvas{display:block;width:100%;height:100%}
-.caption{position:absolute;left:12px;bottom:10px;right:12px;color:#fff;font-size:13px;text-shadow:0 1px 3px rgba(0,0,0,.6);pointer-events:none}
+.caption{position:absolute;left:12px;top:10px;right:12px;color:#fff;font-size:13px;text-shadow:0 1px 3px rgba(0,0,0,.6);pointer-events:none}
 .controls{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
 .controls .btn{flex:1 1 140px}
 .goal{font-size:13px;color:var(--muted);margin-top:10px}
@@ -211,6 +220,13 @@ input,select{font:inherit;color:var(--ink);background:var(--paper);border:1px so
       </div>
       <div class="slip">
         <div class="slip-head"><b>LOTTO 6/45 · A게임</b><span>1~45 중 6개를 표기하세요</span></div>
+        <div class="modes" id="modes" role="radiogroup" aria-label="당첨금 모드">
+          <button class="mode" type="button" role="radio" data-mode="real"><b>현실</b><small>세전 15~35억</small></button>
+          <button class="mode" type="button" role="radio" data-mode="100"><b>100억</b><small>세금 없음</small></button>
+          <button class="mode" type="button" role="radio" data-mode="1000"><b>1000억</b><small>세금 없음</small></button>
+          <button class="mode" type="button" role="radio" data-mode="custom"><b>직접</b><small>원하는 금액</small></button>
+        </div>
+        <label class="custom-amt" id="customWrap" for="inCustom" hidden>받을 금액<input id="inCustom" type="number" min="1" max="1000000" step="1" value="500">억 원</label>
         <div class="grid45" id="grid45" role="group" aria-label="로또 번호 선택"></div>
         <div class="slip-actions">
           <button class="btn alt" id="autoBtn" type="button">자동 선택</button>
@@ -317,11 +333,14 @@ const CATALOG=[
   {id:'l_nh',cat:'land',ic:'⛰️',name:'경남 남해 바닷가 언덕',ds:'대지 250평 · 다랭이논 옆 조용한 마을',price:32000,monthly:0,joy:6,floor:.3,asset:1,region:'남해'},
   {id:'l_ys',cat:'land',ic:'🌉',name:'전남 여수 오션뷰',ds:'대지 220평 · 밤바다 야경',price:45000,monthly:0,joy:7,floor:.3,asset:1,region:'여수'},
 
+  {id:'l_island',cat:'land',big:1,ic:'🏝️',name:'남해 무인도 한 섬',ds:'섬 전체 3만 평 · 선착장 포함',price:1500000,monthly:300,joy:16,floor:.35,asset:1,region:'내 섬'},
+  {id:'l_resort',cat:'land',big:1,ic:'🌴',name:'제주 해안 1만 평 부지',ds:'해안선 400m · 개인 해변',price:3500000,monthly:500,joy:18,floor:.35,asset:1,region:'제주'},
   {id:'h_modern',cat:'house',ic:'🏠',name:'모던 단층 주택',ds:'40평 · 철근콘크리트 · 공사 6개월',price:52000,monthly:45,joy:10,floor:.45,asset:1,build:6,style:'modern'},
   {id:'h_glass',cat:'house',ic:'🏢',name:'2층 통유리 오션뷰',ds:'65평 · 2층 전면 유리 · 공사 10개월',price:95000,monthly:80,joy:14,floor:.45,asset:1,build:10,style:'glass'},
   {id:'h_hanok',cat:'house',ic:'🏯',name:'바닷가 한옥',ds:'35평 · 기와지붕 · 공사 12개월',price:78000,monthly:70,joy:13,floor:.5,asset:1,build:12,style:'hanok'},
   {id:'h_box',cat:'house',ic:'📦',name:'컨테이너 하우스',ds:'20평 · 모듈 주택 · 공사 2개월',price:9000,monthly:15,joy:5,floor:.4,asset:1,build:2,style:'box'},
 
+  {id:'h_mansion',cat:'house',big:1,ic:'🏛️',name:'오션뷰 대저택',ds:'300평 · 인피니티 풀 · 지하 게임관 · 공사 18개월',price:1500000,monthly:3000,joy:20,floor:.45,asset:1,build:18,style:'mansion'},
   {id:'g_pc',cat:'game',ic:'🖥️',name:'최고급 게이밍 PC',ds:'RTX 5090 · 라이젠 9 9950X3D · 64GB · 수랭',price:1100,monthly:6,joy:8,floor:.25,gi:'🖥️'},
   {id:'g_mon',cat:'game',ic:'🖥️',name:'49인치 OLED 커브드 모니터',ds:'240Hz · 듀얼 QHD',price:220,monthly:0,joy:3,floor:.2},
   {id:'g_ps',cat:'game',ic:'🎮',name:'플레이스테이션 5 Pro',ds:'+ 게임 30종 · 듀얼센스 4개',price:260,monthly:2,joy:5,floor:.25,gi:'🎮'},
@@ -331,6 +350,9 @@ const CATALOG=[
   {id:'g_arc',cat:'game',ic:'👾',name:'오락실 기계 3대',ds:'철권 · 펌프잇업 · 스트리트 파이터',price:1800,monthly:8,joy:6,floor:.3,gi:'👾'},
   {id:'g_vr',cat:'game',ic:'🥽',name:'VR 세트 + 프리 무브 공간',ds:'최신 헤드셋 · 트래킹 6점',price:250,monthly:1,joy:4,floor:.2},
 
+  {id:'g_pcbang',cat:'game',big:1,ic:'💺',name:'개인 PC방 50석',ds:'별장 지하층 통째로 · 친구 초대 무제한',price:60000,monthly:600,joy:10,floor:.3,gi:'💺'},
+  {id:'g_arena',cat:'game',big:1,ic:'🏟️',name:'개인 e스포츠 경기장',ds:'관중석 500석 · 중계 장비',price:1200000,monthly:4000,joy:14,floor:.3,gi:'🏟️'},
+  {id:'g_studio',cat:'game',big:1,ic:'🧑‍💻',name:'내 게임 회사 설립',ds:'개발자 30명 · 꿈의 게임 만들기',price:500000,monthly:30000,joy:15,floor:.5},
   {id:'p_gold',cat:'pet',ic:'🦮',name:'골든 리트리버',ds:'사료 · 미용 · 병원비 포함',price:300,monthly:35,joy:9,floor:.75,pet:'🦮',petName:['바다','모래','파도']},
   {id:'p_corgi',cat:'pet',ic:'🐕',name:'웰시코기',ds:'짧은 다리로 해변 질주',price:250,monthly:28,joy:8,floor:.75,pet:'🐕',petName:['감자','식빵','도토리']},
   {id:'p_cat',cat:'pet',ic:'🐈',name:'고양이 두 마리',ds:'창가 자리 쟁탈전',price:80,monthly:25,joy:7,floor:.75,pet:'🐈',count:2,petName:['미역','다시마']},
@@ -339,14 +361,24 @@ const CATALOG=[
   {id:'p_goat',cat:'pet',ic:'🐐',name:'흑염소 세 마리',ds:'풀을 깎아줌 · 가끔 탈출',price:120,monthly:20,joy:5,floor:.6,pet:'🐐',count:3,petName:['깜','장','콩']},
   {id:'p_hen',cat:'pet',ic:'🐔',name:'닭 열 마리 + 닭장',ds:'아침마다 달걀',price:60,monthly:8,joy:4,floor:.6,pet:'🐔',count:4,petName:['꼬꼬']},
 
+  {id:'p_ranch',cat:'pet',big:1,ic:'🏇',name:'말 목장 (말 6마리)',ds:'마사 · 트랙 · 조련사 2명',price:300000,monthly:2500,joy:14,floor:.7,pet:'🐎',count:4,petName:['천둥','바람','노을','은하']},
+  {id:'p_shelter',cat:'pet',big:1,ic:'🐾',name:'유기동물 보호소 설립',ds:'200마리 수용 · 수의사 상주',price:500000,monthly:5000,joy:16,floor:.8,pet:'🐶',count:5,petName:['행복','희망','사랑','복덩','콩이']},
   {id:'r_car',cat:'ride',ic:'🚗',name:'포르쉐 911 카레라',ds:'보험·자동차세·주유 포함',price:21000,monthly:180,joy:10,floor:.2,asset:.6,ride:'car'},
   {id:'r_suv',cat:'ride',ic:'🚙',name:'대형 SUV',ds:'개들 태우고 다닐 차',price:9000,monthly:90,joy:5,floor:.3,asset:.6,ride:'suv'},
   {id:'r_boat',cat:'ride',ic:'⛵',name:'30피트 세일링 요트',ds:'마리나 계류비·정비 포함',price:38000,monthly:320,joy:12,floor:.25,asset:.5,ride:'boat',needLand:1},
   {id:'r_surf',cat:'ride',ic:'🏄',name:'서핑 장비 + 1년 강습',ds:'보드 3개 · 웻슈트',price:400,monthly:15,joy:5,floor:.5,ride:'surf'},
 
+  {id:'r_cars',cat:'ride',big:1,ic:'🏁',name:'슈퍼카 10대 컬렉션',ds:'페라리 · 람보르기니 · 맥라렌 · 차고 포함',price:600000,monthly:2000,joy:14,floor:.25,asset:.6,ride:'cars'},
+  {id:'r_heli',cat:'ride',big:1,ic:'🚁',name:'전용 헬기',ds:'조종사 · 격납고 · 서울까지 40분',price:800000,monthly:8000,joy:14,floor:.3,asset:.6,ride:'heli'},
+  {id:'r_mega',cat:'ride',big:1,ic:'🛳️',name:'슈퍼요트 50m',ds:'선원 12명 · 헬기 착륙장',price:5000000,monthly:30000,joy:20,floor:.3,asset:.5,ride:'mega',needLand:1},
+  {id:'r_jet',cat:'ride',big:1,ic:'✈️',name:'프라이빗 제트',ds:'14인승 · 대륙 횡단 · 조종사 2명',price:7000000,monthly:40000,joy:18,floor:.25,asset:.55,ride:'jet'},
   {id:'x_parent',cat:'life',ic:'🏡',name:'부모님 집 사드리기',ds:'수도권 아파트 · 증여세 포함',price:72000,monthly:0,joy:16,floor:.7,once:1},
   {id:'x_trip',cat:'life',ic:'✈️',name:'1년 세계 일주',ds:'항공·숙박 비즈니스급',price:16000,monthly:0,joy:12,floor:.2,once:1},
   {id:'x_donate',cat:'life',ic:'🤝',name:'1억 기부',ds:'모교 장학금 · 동물보호단체',price:10000,monthly:0,joy:8,floor:.6,once:1},
+  {id:'x_space',cat:'life',big:1,ic:'🚀',name:'우주 관광',ds:'준궤도 비행 · 무중력 4분',price:80000,monthly:0,joy:16,floor:.3,once:1},
+  {id:'x_library',cat:'life',big:1,ic:'📚',name:'고향에 도서관 기증',ds:'내 이름이 붙은 도서관',price:1000000,monthly:0,joy:15,floor:.75,once:1},
+  {id:'x_found',cat:'life',big:1,ic:'🎓',name:'장학재단 설립',ds:'매년 학생 300명 지원',price:3000000,monthly:0,joy:18,floor:.8,once:1},
+  {id:'x_team',cat:'life',big:1,ic:'🏆',name:'프로 e스포츠 팀 창단',ds:'선수단 · 코치 · 숙소 · 리그 참가',price:2000000,monthly:50000,joy:16,floor:.5,once:1},
   {id:'x_keeper',cat:'life',ic:'🧑‍🌾',name:'별장 관리인 고용',ds:'동물 돌봄 · 청소 · 정원 관리',price:0,monthly:380,joy:3,floor:.5,needLand:1},
   {id:'x_quit',cat:'life',ic:'📄',name:'회사에 사직서 내기',ds:'월급은 끊기고 시간은 생깁니다',price:0,monthly:0,joy:12,floor:0,once:1,quit:1}
 ];
@@ -355,7 +387,7 @@ const byId=id=>CATALOG.find(c=>c.id===id)||(S.customs||[]).find(c=>c.id===id);
 /* ---------- 상태 ---------- */
 let S=null;
 function fresh(){return {phase:'draw',picks:[],prizeWon:0,net:0,tickets:0,cash:0,month:0,startY:new Date().getFullYear(),startM:new Date().getMonth()+1,
-  salary:280,living:180,employed:true,items:[],mood:0,happy:55,flow:0,hist:[],log:[],pending:null,ended:false,endReason:'',spent:{},customs:[],uid:1,reportSeen:false,tab:'shop'};}
+  salary:280,living:180,employed:true,items:[],mood:0,happy:55,flow:0,hist:[],log:[],pending:null,ended:false,endReason:'',spent:{},customs:[],uid:1,mode:'real',customEok:500,reportSeen:false,tab:'shop'};}
 function save(){try{localStorage.setItem('lotto-after-v1',JSON.stringify(S))}catch(e){}}
 function load(){try{const s=localStorage.getItem('lotto-after-v1');return s?JSON.parse(s):null}catch(e){return null}}
 
@@ -380,6 +412,14 @@ function renderGrid(){
     c.onclick=()=>{if(drawing)return;const i=S.picks.indexOf(n);if(i>=0)S.picks.splice(i,1);else if(S.picks.length<6)S.picks.push(n);renderGrid()};g.appendChild(c)}
   $('#drawBtn').disabled=S.picks.length!==6;$('#drawBtn').textContent='추첨하기 ('+S.picks.length+'/6)';
 }
+const MODE_EOK={'100':100,'1000':1000};
+function modeEok(){return S.mode==='custom'?Math.max(1,Math.min(1000000,Math.round(+S.customEok||1))):MODE_EOK[S.mode]}
+function renderModes(){
+  document.querySelectorAll('#modes .mode').forEach(b=>b.setAttribute('aria-checked',String(b.dataset.mode===S.mode)));
+  $('#customWrap').hidden=S.mode!=='custom';$('#inCustom').value=S.customEok;
+}
+document.querySelectorAll('#modes .mode').forEach(b=>b.onclick=()=>{if(drawing)return;S.mode=b.dataset.mode;renderModes();save()});
+$('#inCustom').oninput=()=>{S.customEok=$('#inCustom').value;save()};
 let drawing=false;
 $('#autoBtn').onclick=()=>{if(drawing)return;const a=[];while(a.length<6){const n=ri(1,45);if(!a.includes(n))a.push(n)}S.picks=a;renderGrid()};
 $('#clearBtn').onclick=()=>{if(drawing)return;S.picks=[];renderGrid()};
@@ -392,12 +432,13 @@ $('#drawBtn').onclick=()=>{
   setTimeout(()=>{$('#drawHint').innerHTML='<b style="color:var(--slip)">6개 번호 모두 일치. 1등입니다.</b>';},6*step+300);
   // 실제 확률로 몇 장째에 당첨됐을지 (기하분포 표본)
   const p=1/8145060;S.tickets=Math.max(1,Math.ceil(Math.log(1-Math.random())/Math.log(1-p)));
-  S.prizeWon=ri(150000,350000)*10000+ri(0,9999);
+  S.prizeWon=S.mode==='real'?ri(150000,350000)*10000+ri(0,9999):modeEok()*1e8;
   setTimeout(()=>{drawing=false;S.phase='receipt';save();show()},6*step+1600);
 };
 
 /* ---------- 2. 영수증 ---------- */
 function renderReceipt(){
+  if(S.mode&&S.mode!=='real'){renderFreeReceipt();return}
   const P=S.prizeWon, base=P-1000;
   const t1=Math.floor(Math.min(base,3e8)*0.20), l1=Math.floor(t1*0.1);
   const t2=Math.floor(Math.max(0,base-3e8)*0.30), l2=Math.floor(t2*0.1);
@@ -412,6 +453,15 @@ function renderReceipt(){
   '<div class="row total"><span>실수령액</span><span>'+f(netWon)+'</span></div>';
   const cost=S.tickets*1000, yrs=S.tickets/5/52;
   $('#rcFact').innerHTML='현실이었다면: 이번 시뮬레이션의 운으로 계산하면 <b>'+S.tickets.toLocaleString('ko-KR')+'장째</b>에 당첨됩니다. 로또 구입비만 <b>'+won(cost/10000)+'</b>, 매주 5천 원씩 산다면 <b>'+Math.round(yrs).toLocaleString('ko-KR')+'년</b> 걸리는 숫자예요. 세금은 구입비 1,000원을 뺀 금액에 매겨지고, 1등은 NH농협은행 본점에 직접 방문해서 받습니다.';
+  $('#inSalary').value=S.salary;$('#inLiving').value=S.living;
+}
+function renderFreeReceipt(){
+  const P=S.prizeWon,f=n=>n.toLocaleString('ko-KR')+'원';S.net=Math.floor(P/10000);
+  $('#rcSub').textContent='제 '+ROUND.toLocaleString('ko-KR')+'회 · 자유 모드 · 당첨번호 '+[...S.picks].sort((a,b)=>a-b).join(' ');
+  $('#rcRows').innerHTML='<div class="row"><span>당첨금</span><span>'+f(P)+'</span></div><div class="row"><span>세금</span><span>0원</span></div>'+
+    '<div class="row total"><span>실수령액</span><span>'+f(P)+'</span></div>';
+  const times=Math.max(1,Math.round(P/2e9));
+  $('#rcFact').innerHTML='<b>자유 모드</b>라서 세금 없이 전액을 받습니다. 현실의 로또 1등은 세전 20억 원 안팎이니, 이 돈은 1등에 <b>'+times.toLocaleString('ko-KR')+'번</b> 당첨된 것과 비슷합니다. 버킷리스트에 무인도, 대저택, 슈퍼요트 같은 <b>큰손 아이템</b>이 함께 열립니다.';
   $('#inSalary').value=S.salary;$('#inLiving').value=S.living;
 }
 $('#startBtn').onclick=()=>{
@@ -466,7 +516,7 @@ function sell(uid){
 
 /* ---------- 4. 한 달 진행 ---------- */
 const EVENTS=[
-  {w:3,cond:()=>houseDone()&&[8,9].includes(cal(S.month).m),run:()=>{const c=ri(1500,5000);S.cash-=c;S.mood-=6;return ['태풍 상륙','태풍이 별장 지붕과 데크를 뜯어갔다. 바닷가 집의 현실. 수리비 '+won(c)+'.']}},
+  {w:3,cond:()=>houseDone()&&[8,9].includes(cal(S.month).m),run:()=>{const c=Math.max(ri(1500,5000),Math.round(byId(house().id).price*rnd(.01,.03)));S.cash-=c;S.mood-=6;return ['태풍 상륙','태풍이 별장 지붕과 데크를 뜯어갔다. 바닷가 집의 현실. 수리비 '+won(c)+'.']}},
   {w:2,cond:()=>S.cash>15000&&S.month>1,choice:()=>({title:'사촌에게서 온 전화',text:'10년 만에 연락 온 사촌이 "사업 자금 딱 1억만" 빌려달라고 한다. 계약서는 없다.',opts:[
     {label:'빌려준다 (-1억 원)',go:()=>{S.cash-=10000;S.mood+=2;S.loan=(S.loan||0)+1;return '1억을 보냈다. 사촌은 "진짜 금방 갚을게"라고 했다.'}},
     {label:'정중히 거절한다',go:()=>{S.mood-=4;return '거절했다. 다음 명절 분위기가 조금 어색해질 것 같다.'}}]})},
@@ -601,7 +651,7 @@ function chartSVG(){
 /* ---------- 렌더 ---------- */
 function show(){
   $('#vDraw').hidden=S.phase!=='draw';$('#vReceipt').hidden=S.phase!=='receipt';$('#vPlay').hidden=S.phase!=='play';
-  if(S.phase==='draw'){renderGrid();$('#balls').innerHTML='';$('#drawHint').textContent='1등 확률은 8,145,060분의 1입니다. 시뮬레이션이니까 이번엔 당첨됩니다.'}
+  if(S.phase==='draw'){renderModes();renderGrid();$('#balls').innerHTML='';$('#drawHint').textContent='1등 확률은 8,145,060분의 1입니다. 시뮬레이션이니까 이번엔 당첨됩니다.'}
   if(S.phase==='receipt')renderReceipt();
   if(S.phase==='play'){render();afterTick()}
 }
@@ -627,7 +677,7 @@ function renderPane(){
   if(S.tab==='shop'){
     let h='';
     CATS.forEach(cat=>{
-      const list=cat.id==='custom'?(S.customs||[]):CATALOG.filter(c=>c.cat===cat.id);
+      const list=cat.id==='custom'?(S.customs||[]):CATALOG.filter(c=>c.cat===cat.id&&(!c.big||(S.mode&&S.mode!=='real'))).sort((x,y)=>(y.big||0)-(x.big||0));
       h+='<div class="cat"><h3>'+cat.name+'<small>'+cat.note+'</small></h3>';
       list.forEach(c=>{
         const r=blockReason(c),owned=has(c.id);
@@ -637,7 +687,7 @@ function renderPane(){
         else if(r)btn='<button class="buy" disabled type="button">'+r+'</button>';
         else btn='<button class="buy" data-buy="'+c.id+'" type="button">'+(c.price?shortWon(c.price):'실행')+'</button>';
         if(owned&&r!==null&&['pet','ride','custom'].includes(c.cat)&&!r)btn=btn.replace('</button>',' 추가</button>');
-        h+='<div class="item"><div class="ic" aria-hidden="true">'+c.ic+'</div><div><div class="nm">'+c.name+'</div><div class="ds">'+c.ds+'</div><div class="meta">'+meta+'</div></div>'+btn+'</div>';
+        h+='<div class="item"><div class="ic" aria-hidden="true">'+c.ic+'</div><div><div class="nm">'+c.name+(c.big?'<span class="big-tag">큰손</span>':'')+'</div><div class="ds">'+c.ds+'</div><div class="meta">'+meta+'</div></div>'+btn+'</div>';
       });
       if(cat.id==='custom'){
         h+='<div class="custom"><input id="cName" placeholder="하고 싶은 일 (예: 마당에 캠핑용 트리하우스)" maxlength="40"><input id="cPrice" type="number" min="0" step="10" placeholder="가격(만원)"><input id="cMonthly" type="number" min="0" step="1" placeholder="월 유지비(만원)"><select id="cIcon" aria-label="아이콘"><option>⭐</option><option>🌳</option><option>🏕️</option><option>🎸</option><option>📚</option><option>🍷</option><option>🛶</option><option>🔭</option></select><button class="btn" id="cAdd" type="button">버킷리스트에 추가</button></div>';
@@ -677,7 +727,7 @@ $('#resetBtn').onclick=()=>{
   if(!resetArmed){resetArmed=true;$('#resetBtn').textContent='한 번 더 누르면 초기화';setTimeout(()=>{resetArmed=false;$('#resetBtn').textContent='처음부터'},3000);return}
   resetArmed=false;$('#resetBtn').textContent='처음부터';restart();
 };
-function restart(){if(running){clearInterval(running);running=null}const keep={salary:S.salary,living:S.living};S=fresh();Object.assign(S,keep);save();closeModal();show();scrollTo(0,0)}
+function restart(){if(running){clearInterval(running);running=null}const keep={salary:S.salary,living:S.living,mode:S.mode,customEok:S.customEok};S=fresh();Object.assign(S,keep);save();closeModal();show();scrollTo(0,0)}
 
 /* ---------- 장면 (캔버스) ---------- */
 const cv=$('#cv'),ctx=cv.getContext('2d');let CW=0,CH=0;
@@ -719,7 +769,7 @@ function draw(ts){
 
     const L=land(),Hs=house();
     // 탈것: 요트·서핑
-    S.items.forEach(i=>{const d=byId(i.id);if(d.ride==='boat')emoji('⛵',W*.3+Math.sin(t*.15)*W*.06,hz+(sb-hz)*.55+Math.sin(t*1.3)*2,H*.11);if(d.ride==='surf')emoji('🏄',W*.12+((t*18)%(W*.5)),sb-2+Math.sin(t*2)*2,H*.07)});
+    S.items.forEach(i=>{const d=byId(i.id);if(d.ride==='boat')emoji('⛵',W*.3+Math.sin(t*.15)*W*.06,hz+(sb-hz)*.55+Math.sin(t*1.3)*2,H*.11);if(d.ride==='mega')emoji('🛳️',W*.42+Math.sin(t*.1)*W*.04,hz+(sb-hz)*.75+Math.sin(t*1.1)*2,H*.17);if(d.ride==='heli')emoji('🚁',((t*40)%(W+200))-100,H*.14+Math.sin(t*2)*4,H*.09,true);if(d.ride==='jet')emoji('✈️',W-((t*70+W*.5)%(W+300))+150,H*.08,H*.08);if(d.ride==='surf')emoji('🏄',W*.12+((t*18)%(W*.5)),sb-2+Math.sin(t*2)*2,H*.07)});
     if(!L){
       // 매물 표지판
       const px=W*.62,py=H*.86;ctx.fillStyle='#7a5532';ctx.fillRect(px-3,py-H*.16,6,H*.16);
@@ -736,7 +786,7 @@ function draw(ts){
     }
     if(Hs)drawHouse(byId(Hs.id),Hs,W,H,t,night);
     // 탈것: 차
-    S.items.forEach(i=>{const d=byId(i.id);if(d.ride==='car')emoji('🏎️',W*.3,H*.93,H*.09,true);if(d.ride==='suv')emoji('🚙',W*.2,H*.95,H*.09,true)});
+    S.items.forEach(i=>{const d=byId(i.id);if(d.ride==='car')emoji('🏎️',W*.3,H*.93,H*.09,true);if(d.ride==='suv')emoji('🚙',W*.2,H*.95,H*.09,true);if(d.ride==='cars')['🏎️','🚗','🏎️','🚓'].forEach((e,k)=>emoji(e,W*(.22+k*.08),H*(.99-k%2*.03),H*.075,true))});
     // 커스텀 꿈
     let ci=0;S.items.forEach(i=>{const d=byId(i.id);if(d.cat==='custom'){emoji(d.sprite||'⭐',W*(.9-ci*.07),H*.86,H*.07);ci++}});
     // 동물
@@ -771,6 +821,11 @@ function drawHouse(d,it,W,H,t,night){
   let wx,wy,ww,wh;
   if(d.style==='modern'){const w=210*s,h=90*s;ctx.fillStyle=mix('f5f3ee','8b8a86',night);ctx.fillRect(cx-w/2,by-h,w,h);ctx.fillStyle='#4a4743';ctx.fillRect(cx-w/2-10*s,by-h-10*s,w+20*s,12*s);
     ctx.fillStyle='#8b6b4a';ctx.fillRect(cx-w/2+16*s,by-58*s,26*s,58*s);wx=cx-w/2+56*s;wy=by-70*s;ww=w-72*s;wh=52*s}
+  else if(d.style==='mansion'){const w=330*s,h=78*s;ctx.fillStyle='#5fc3df';ctx.fillRect(cx-w/2-60*s,by-6*s,110*s,14*s);ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.strokeRect(cx-w/2-60*s,by-6*s,110*s,14*s);
+    ctx.fillStyle=mix('f6f4ef','8a8984',night);ctx.fillRect(cx-w/2,by-h,w,h);ctx.fillRect(cx-w/2+40*s,by-h*2,w-80*s,h);ctx.fillRect(cx-40*s,by-h*2-40*s,80*s,40*s);
+    ctx.fillStyle='#3e3c39';ctx.fillRect(cx-w/2+30*s,by-h*2-8*s,w-60*s,10*s);ctx.fillRect(cx-w/2-8*s,by-h-6*s,w+16*s,8*s);ctx.fillRect(cx-48*s,by-h*2-48*s,96*s,10*s);
+    ctx.fillStyle=winCol;ctx.fillRect(cx-w/2+56*s,by-h*2+12*s,w-112*s,h-24*s);ctx.fillRect(cx-28*s,by-h*2-30*s,56*s,22*s);
+    wx=cx-w/2+16*s;wy=by-h+14*s;ww=w-32*s;wh=h-20*s}
   else if(d.style==='glass'){const w=230*s,h=80*s;ctx.fillStyle=mix('ecebe7','85847f',night);ctx.fillRect(cx-w/2,by-h,w,h);ctx.fillRect(cx-w/2+30*s,by-h*2,w-20*s,h);
     ctx.fillStyle='#3e3c39';ctx.fillRect(cx-w/2+22*s,by-h*2-10*s,w,12*s);ctx.fillRect(cx-w/2-8*s,by-h-6*s,w+16*s,8*s);
     ctx.fillStyle=winCol;ctx.fillRect(cx-w/2+42*s,by-h*2+12*s,w-44*s,h-22*s);ctx.strokeStyle='rgba(255,255,255,.4)';ctx.lineWidth=1;for(let i=1;i<5;i++){const lx=cx-w/2+42*s+i*(w-44*s)/5;ctx.beginPath();ctx.moveTo(lx,by-h*2+12*s);ctx.lineTo(lx,by-h-10*s);ctx.stroke()}
@@ -805,7 +860,7 @@ new ResizeObserver(syncStrip).observe($('.strip'));
 function snapshot(){return S}
 function start(data){
   S=(data&&data.phase)?data:(load()||fresh());
-  if(!S.customs)S.customs=[];
+  if(!S.customs)S.customs=[];if(!S.mode)S.mode='real';if(S.customEok==null)S.customEok=500;
   // 저장된 선택 이벤트는 함수를 잃으므로 표시 정보만 유지
   show();resize();requestAnimationFrame(draw);
 }
