@@ -2,6 +2,10 @@
 
 "로또 되면 바닷가에 별장 짓고, 최고급 컴퓨터랑 게임기 들여놓고, 마당에 동물 키워야지"를 실제로 해보는 10년 시뮬레이션 게임입니다.
 
+## 바로 플레이
+
+**https://hambakim.github.io/Note/** (로그인 없이 누구나 접속 가능)
+
 ## 실행
 
 `index.html`을 브라우저로 열면 됩니다. 진행 상황은 브라우저(localStorage)에 자동 저장됩니다.
@@ -13,9 +17,9 @@
 ### 1단계: 인터넷 주소 만들기 (GitHub Pages, 무료, 한 번만)
 
 1. GitHub에서 이 저장소를 열고 **Settings → Pages**로 들어갑니다.
-2. **Source**를 `Deploy from a branch`로 두고, 브랜치를 이 게임이 있는 브랜치(병합 후에는 `main`)로, 폴더를 `/ (root)`로 고른 뒤 **Save**를 누릅니다.
+2. **Source**를 `Deploy from a branch`로 두고, 브랜치를 `claude/lottery-win-simulator-e9ubtt`로, 폴더를 `/ (root)`로 고른 뒤 **Save**를 누릅니다.
 3. 1~2분 뒤 아래 주소로 접속됩니다.
-   `https://<GitHub 아이디>.github.io/<저장소 이름>/lotto-simulator/`
+   `https://hambakim.github.io/Note/`
 
 참고: 무료 계정은 공개(public) 저장소에서만 Pages를 쓸 수 있습니다.
 
