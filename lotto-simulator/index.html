@@ -322,6 +322,7 @@ const CATS=[
   {id:'land',name:'바닷가 부지',note:'하나만 살 수 있어요'},
   {id:'house',name:'별장 짓기',note:'부지가 있어야 해요'},
   {id:'game',name:'게임룸',note:'별장이 있어야 해요'},
+  {id:'spa',name:'스파·사우나',note:'별장이 있어야 해요'},
   {id:'pet',name:'마당 동물',note:'부지가 있어야 해요'},
   {id:'ride',name:'탈것',note:''},
   {id:'life',name:'인생 결정',note:''},
@@ -353,12 +354,28 @@ const CATALOG=[
   {id:'g_pcbang',cat:'game',big:1,ic:'💺',name:'개인 PC방 50석',ds:'별장 지하층 통째로 · 친구 초대 무제한',price:60000,monthly:600,joy:10,floor:.3,gi:'💺'},
   {id:'g_arena',cat:'game',big:1,ic:'🏟️',name:'개인 e스포츠 경기장',ds:'관중석 500석 · 중계 장비',price:1200000,monthly:4000,joy:14,floor:.3,gi:'🏟️'},
   {id:'g_studio',cat:'game',big:1,ic:'🧑‍💻',name:'내 게임 회사 설립',ds:'개발자 30명 · 꿈의 게임 만들기',price:500000,monthly:30000,joy:15,floor:.5},
+  {id:'s_hinoki',cat:'spa',ic:'🛁',name:'히노키 편백 욕조',ds:'통창 앞 욕조 · 바다 보며 반신욕',price:1500,monthly:15,joy:6,floor:.45},
+  {id:'s_barrel',cat:'spa',ic:'🧖',name:'핀란드식 배럴 사우나',ds:'원목 통 사우나 · 장작 난로 · 6인용',price:3500,monthly:40,joy:8,floor:.45,spa:'barrel'},
+  {id:'s_tub',cat:'spa',ic:'♨️',name:'노천 온수 스파',ds:'데크 위 자쿠지 · 별 보며 입욕',price:4000,monthly:60,joy:9,floor:.45,spa:'tub'},
+  {id:'s_cold',cat:'spa',ic:'🧊',name:'냉탕 (콜드 플런지)',ds:'4℃ 냉수 · 사우나 후 입수',price:1200,monthly:20,joy:4,floor:.4,spa:'cold'},
+  {id:'s_jjim',cat:'spa',ic:'🔥',name:'황토 찜질방',ds:'황토방 · 소금방 · 얼음방 · 식혜 냉장고',price:8000,monthly:90,joy:9,floor:.5,spa:'jjim'},
+  {id:'s_massage',cat:'spa',ic:'💆',name:'최고급 안마의자 + 전속 마사지사',ds:'안마의자 2대 · 주 2회 방문 관리',price:1500,monthly:250,joy:7,floor:.5},
+  {id:'s_pool',cat:'spa',big:1,ic:'🏊',name:'실내 해수 수영장 + 스파 동',ds:'25m 해수풀 · 습식·건식 사우나 · 테라피룸',price:300000,monthly:2500,joy:15,floor:.45,spa:'pool'},
+  {id:'s_resort',cat:'spa',big:1,ic:'🏨',name:'프라이빗 웰니스 리조트',ds:'온천수 시추 · 노천탕 5개 · 전속 테라피스트',price:1000000,monthly:8000,joy:18,floor:.5,spa:'resort'},
   {id:'p_gold',cat:'pet',ic:'🦮',name:'골든 리트리버',ds:'사료 · 미용 · 병원비 포함',price:300,monthly:35,joy:9,floor:.75,pet:'🦮',petName:['바다','모래','파도']},
   {id:'p_corgi',cat:'pet',ic:'🐕',name:'웰시코기',ds:'짧은 다리로 해변 질주',price:250,monthly:28,joy:8,floor:.75,pet:'🐕',petName:['감자','식빵','도토리']},
   {id:'p_cat',cat:'pet',ic:'🐈',name:'고양이 두 마리',ds:'창가 자리 쟁탈전',price:80,monthly:25,joy:7,floor:.75,pet:'🐈',count:2,petName:['미역','다시마']},
   {id:'p_alpaca',cat:'pet',ic:'🦙',name:'알파카',ds:'축사·건초·수의사 왕진 포함',price:1500,monthly:70,joy:9,floor:.65,pet:'🦙',petName:['몽실','파카']},
   {id:'p_pony',cat:'pet',ic:'🐎',name:'포니(조랑말)',ds:'마방 · 편자 · 전담 수의사',price:2500,monthly:110,joy:10,floor:.65,pet:'🐎',petName:['번개','당근']},
   {id:'p_goat',cat:'pet',ic:'🐐',name:'흑염소 세 마리',ds:'풀을 깎아줌 · 가끔 탈출',price:120,monthly:20,joy:5,floor:.6,pet:'🐐',count:3,petName:['깜','장','콩']},
+  {id:'p_pome',cat:'pet',ic:'🐕',name:'포메라니안',ds:'솜사탕 같은 털 · 3kg · 미용비 포함',price:250,monthly:22,joy:8,floor:.75,pet:'🐕',small:1,petName:['솜이','뭉치','구름']},
+  {id:'p_malt',cat:'pet',ic:'🐶',name:'몰티즈',ds:'하얀 털 · 2.5kg · 무릎이 제자리',price:200,monthly:20,joy:8,floor:.75,pet:'🐶',small:1,petName:['설기','우유','찹쌀']},
+  {id:'p_bichon',cat:'pet',ic:'🐩',name:'비숑 프리제',ds:'동그란 머리 미용 · 하루 종일 웃는 얼굴',price:280,monthly:25,joy:8,floor:.75,pet:'🐩',small:1,petName:['마카롱','몽글','두부']},
+  {id:'p_bunny',cat:'pet',ic:'🐇',name:'아기 토끼 두 마리',ds:'롭이어 · 마당 울타리 안에서 깡총',price:40,monthly:8,joy:6,floor:.7,pet:'🐇',count:2,small:1,petName:['당근','보리']},
+  {id:'p_hamster',cat:'pet',ic:'🐹',name:'햄스터 세 마리',ds:'골든 햄스터 · 쳇바퀴 3층 집',price:15,monthly:3,joy:4,floor:.65,pet:'🐹',count:3,tiny:1,petName:['호떡','찐빵','만두']},
+  {id:'p_hedgehog',cat:'pet',ic:'🦔',name:'고슴도치',ds:'밤에 활발 · 손 위에서 동그랗게',price:30,monthly:5,joy:5,floor:.7,pet:'🦔',tiny:1,petName:['밤송이']},
+  {id:'p_parrot',cat:'pet',ic:'🦜',name:'앵무새',ds:'코뉴어 · 이름 부르면 대답',price:120,monthly:8,joy:6,floor:.7,pet:'🦜',fly:1,petName:['초록이','망고']},
+  {id:'p_turtle',cat:'pet',ic:'🐢',name:'아기 거북이',ds:'설가타 육지거북 · 50년 같이 삶',price:60,monthly:4,joy:4,floor:.7,pet:'🐢',tiny:1,petName:['느림보']},
   {id:'p_hen',cat:'pet',ic:'🐔',name:'닭 열 마리 + 닭장',ds:'아침마다 달걀',price:60,monthly:8,joy:4,floor:.6,pet:'🐔',count:4,petName:['꼬꼬']},
 
   {id:'p_ranch',cat:'pet',big:1,ic:'🏇',name:'말 목장 (말 6마리)',ds:'마사 · 트랙 · 조련사 2명',price:300000,monthly:2500,joy:14,floor:.7,pet:'🐎',count:4,petName:['천둥','바람','노을','은하']},
@@ -473,12 +490,12 @@ $('#startBtn').onclick=()=>{
 
 /* ---------- 3. 구매 ---------- */
 function blockReason(c){
-  const unique=c.once||['land','house','game'].includes(c.cat)||c.id==='x_keeper';
+  const unique=c.once||['land','house','game','spa'].includes(c.cat)||c.id==='x_keeper';
   if(unique&&has(c.id))return null; // null = 보유 중
   if(c.cat==='land'&&land())return '이미 부지 보유';
   if(c.cat==='house'&&!land())return '부지 필요';
   if(c.cat==='house'&&house())return '이미 건축';
-  if(c.cat==='game'&&!house())return '별장 필요';
+  if((c.cat==='game'||c.cat==='spa')&&!house())return '별장 필요';
   if(c.cat==='pet'&&!land())return '부지 필요';
   if(c.needLand&&!land())return '부지 필요';
   if(c.price>S.cash)return '현금 부족';
@@ -497,6 +514,7 @@ function buy(id){
     land:'<b>'+c.name+'</b> 부지를 샀다. 등기부등본에 내 이름이 찍혔다.',
     house:'<b>'+c.name+'</b> 착공. 완공까지 '+c.build+'개월.',
     game:'<b>'+c.name+'</b> 주문 완료.'+(houseDone()?'':' 별장이 완공되면 설치된다.'),
+    spa:'<b>'+c.name+'</b> 공사 계약.'+(houseDone()?' 오늘 밤 바로 써봤다.':' 별장이 완공되면 같이 지어진다.'),
     pet:'<b>'+c.name+'</b> 입양. 이름은 '+(it.sprites||[]).map(s=>s.name).join(', ')+'.',
     ride:'<b>'+c.name+'</b> 구입.',
     life:c.quit?'사직서를 냈다. 팀장의 표정은 평생 못 잊을 것 같다.':'<b>'+c.name+'</b>.',
@@ -507,7 +525,7 @@ function buy(id){
 function sell(uid){
   const it=S.items.find(i=>i.uid===uid);if(!it)return;const c=byId(it.id);
   if(c.cat==='land'&&house()){toast('별장이 있는 부지는 팔 수 없어요. 별장부터 처분하세요.');return}
-  if(c.cat==='house'&&hasCat('game')){S.items=S.items.filter(i=>byId(i.id)?.cat!=='game');addLog('게임룸 장비도 같이 정리했다.','sys')}
+  if(c.cat==='house'&&(hasCat('game')||hasCat('spa'))){S.items=S.items.filter(i=>!['game','spa'].includes(byId(i.id)?.cat));addLog('게임룸 장비와 스파 시설도 같이 정리했다.','sys')}
   const back=Math.round((it.value||0)*0.9);S.cash+=back;S.items=S.items.filter(i=>i!==it);
   if(c.pet){addLog('<b>'+c.name+'</b>을(를) 좋은 가족에게 보냈다. 마당이 조용해졌다.','ev');S.mood-=8}
   else addLog('<b>'+c.name+'</b> 처분'+(back?' · 회수 '+won(back):'')+'.','ev');
@@ -547,10 +565,16 @@ const EVENTS=[
     {label:'내 별장은 나만 쓴다',go:()=>{S.mood+=2;return '거절했다. 성수기 바다는 내 거다.'}}]})},
   {w:2,cond:()=>has('r_boat'),run:()=>{S.mood+=5;return ['첫 세일링','바람이 좋아서 요트로 섬까지 나갔다 왔다. 바다 위에서 별장이 작게 보였다.']}},
   {w:1,cond:()=>has('r_car'),run:()=>{S.cash-=180;S.mood-=2;return ['과속 카메라','해안도로에서 신나게 달리다 과태료와 수리비가 나왔다. 180만 원.']}},
+  {w:3,cond:()=>houseDone()&&(has('s_barrel')||has('s_jjim')||has('s_pool')||has('s_resort')),run:()=>{const cold=has('s_cold');S.mood+=cold?6:4;return ['사우나 루틴',cold?'사우나 15분, 냉탕 1분, 데크에서 바닷바람 10분. 세 번 반복하니 머리가 텅 비었다.':'땀을 한 바가지 흘리고 나와서 바다에 뛰어들었다. 생각보다 차가웠다.']}},
+  {w:2,cond:()=>houseDone()&&(has('s_tub')||has('s_resort'))&&[11,12,1,2].includes(cal(S.month).m),run:()=>{S.mood+=5;return ['눈 오는 밤 노천탕','눈이 내리는데 뜨거운 물 속에서 밤바다를 봤다. 이게 로또 당첨의 맛인가 싶었다.']}},
+  {w:1,cond:()=>houseDone()&&hasCat('spa'),run:()=>{const c=ri(80,400);S.cash-=c;S.mood-=1;return ['스파 정비','온수 보일러와 여과기를 점검했다. 바닷가라 부품 부식이 빠르다. 정비비 '+won(c)+'.']}},
+  {w:2,cond:()=>houseDone()&&hasCat('spa')&&pets().some(p=>byId(p.id).small),run:()=>{S.mood+=4;const n=pets().find(p=>byId(p.id).small)?.sprites?.[0]?.name||'강아지';return ['반려동물 스파','미지근한 물을 받아 '+n+'에게 목욕을 시켜줬다. 드라이 후 털이 두 배로 부풀었다.']}},
+  {w:2,cond:()=>has('p_parrot'),run:()=>{S.mood+=3;return ['앵무새의 한마디','앵무새가 "당첨! 당첨!"이라고 말하기 시작했다. 누가 가르쳤는지 모르겠다.']}},
+  {w:2,cond:()=>has('p_pome')||has('p_malt')||has('p_bichon'),run:()=>{S.mood+=4;return ['솜뭉치 출근 배웅','현관에서 작은 강아지가 꼬리를 흔들며 기다리고 있었다. 하루 피로가 녹았다.']}},
   {w:2,cond:()=>pets().length>3&&!has('x_keeper'),run:()=>{S.mood-=5;return ['돌봄 피로','동물 밥 주고, 똥 치우고, 산책 시키고 나니 하루가 끝났다. 관리인을 구할까 고민된다.']}},
   {w:1,cond:()=>!!land(),run:()=>{S.mood+=2;return ['해변 플로깅','동네 주민들과 해변 쓰레기를 주웠다. 이장님이 막걸리를 사주셨다.']}}
 ];
-function busyScore(){return S.items.filter(i=>['game','pet','ride','custom'].includes(byId(i.id)?.cat)).length}
+function busyScore(){return S.items.filter(i=>['game','spa','pet','ride','custom'].includes(byId(i.id)?.cat)).length}
 
 function tick(){
   if(S.ended||S.pending)return;
@@ -559,7 +583,7 @@ function tick(){
   const interest=S.cash>0?S.cash*0.03/12*(1-0.154):0; // 예금 연 3%, 이자소득세 15.4%
   const income=(S.employed?S.salary:0)+interest;
   let out=S.living;
-  S.items.forEach(i=>{const d=byId(i.id);if(!d)return;if(d.cat==='game'&&!houseDone())return;if(d.cat==='house'&&i.buildLeft>0)return;out+=d.monthly||0});
+  S.items.forEach(i=>{const d=byId(i.id);if(!d)return;if(['game','spa'].includes(d.cat)&&!houseDone())return;if(d.cat==='house'&&i.buildLeft>0)return;out+=d.monthly||0});
   let tax=0;
   if(c.m===7||c.m===9){tax=Math.round(S.items.filter(i=>['land','house'].includes(byId(i.id)?.cat)).reduce((a,i)=>a+i.value,0)*0.0025/2);out+=tax}
   S.flow=income-out;S.cash+=S.flow;
@@ -579,11 +603,11 @@ function tick(){
   if(S.cash<0){S.ended=true;S.endReason='bankrupt';addLog('현금이 바닥났다. 집과 땅은 있는데 당장 쓸 돈이 없다.','ev')}
   else if(S.month>=MAX_MONTH){S.ended=true;S.endReason='done';addLog('당첨 후 10년이 흘렀다.','ev')}
 }
-function joyOf(i){const d=byId(i.id);if(!d)return 0;if(d.cat==='house'&&i.buildLeft>0)return 2;if(d.cat==='game'&&!houseDone())return 1;const f=d.floor??.3;return d.joy*(f+(1-f)*Math.pow(.88,i.age))}
+function joyOf(i){const d=byId(i.id);if(!d)return 0;if(d.cat==='house'&&i.buildLeft>0)return 2;if(['game','spa'].includes(d.cat)&&!houseDone())return 1;const f=d.floor??.3;return d.joy*(f+(1-f)*Math.pow(.88,i.age))}
 function happyTarget(){
   const sum=S.items.reduce((a,i)=>a+joyOf(i),0);
   let t=52+42*(1-Math.exp(-sum/38));
-  if(S.employed)t-=8;
+  if(S.employed)t-=hasCat('spa')&&houseDone()?5:8; // 퇴근 후 스파가 스트레스를 덜어줌
   else if(busyScore()<3&&S.month>3)t-=7;
   const n=pets().length;
   if(n>3&&!has('x_keeper'))t-=(n-3)*3;
@@ -707,7 +731,7 @@ function renderPane(){
     if(!S.items.length){p.innerHTML='<div class="empty">아직 산 게 없습니다. 버킷리스트 탭에서 바닷가 부지부터 골라보세요.</div>';return}
     p.innerHTML=S.items.map(i=>{const d=byId(i.id);let st='';
       if(i.buildLeft>0)st='공사 중 · '+i.buildLeft+'개월 남음';
-      else if(d.cat==='game'&&!houseDone())st='별장 완공 후 설치';
+      else if(['game','spa'].includes(d.cat)&&!houseDone())st='별장 완공 후 설치';
       else st='보유 '+i.age+'개월째 · 지금 기쁨 +'+joyOf(i).toFixed(1);
       if(i.sprites)st+=' · '+i.sprites.map(s=>s.name).join(', ');
       const val=i.value?'현재 가치 '+won(i.value):'';
@@ -784,6 +808,7 @@ function draw(ts){
       ctx.fillStyle='#6b4a2b';ctx.fillRect(W*.06,H*.84,4,H*.08);ctx.fillStyle='#f6ead2';ctx.fillRect(W*.03,H*.8,W*.13,H*.055);
       ctx.fillStyle='#3b2a1a';ctx.font='700 '+Math.max(10,H*.03)+'px "IBM Plex Sans KR",sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(byId(L.id).region+' 별장',W*.095,H*.828);
     }
+    if(Hs&&Hs.buildLeft<=0)drawSpa(W,H,t,night);
     if(Hs)drawHouse(byId(Hs.id),Hs,W,H,t,night);
     // 탈것: 차
     S.items.forEach(i=>{const d=byId(i.id);if(d.ride==='car')emoji('🏎️',W*.3,H*.93,H*.09,true);if(d.ride==='suv')emoji('🚙',W*.2,H*.95,H*.09,true);if(d.ride==='cars')['🏎️','🚗','🏎️','🚓'].forEach((e,k)=>emoji(e,W*(.22+k*.08),H*(.99-k%2*.03),H*.075,true))});
@@ -792,7 +817,7 @@ function draw(ts){
     // 동물
     pets().forEach(p=>{const d=byId(p.id);(p.sprites||[]).forEach((s,k)=>{
       if(!reduceMotion){s.x+=s.vx*(1+Math.sin(t+k)*.3);if(s.x<.04||s.x>.94)s.vx*=-1;if(Math.random()<.003)s.vx*=-1}
-      const bob=reduceMotion?0:Math.abs(Math.sin(t*6+k))*H*.012;emoji(d.pet,W*s.x,H*s.y-bob,H*(d.id==='p_pony'||d.id==='p_alpaca'?.1:.075),s.vx>0)})});
+      const bob=reduceMotion?0:Math.abs(Math.sin(t*(d.small||d.tiny?9:6)+k))*H*(d.small?.018:.012);const sz=d.id==='p_pony'||d.id==='p_alpaca'?.1:d.tiny?.045:d.small?.055:.075;if(d.fly){emoji(d.pet,W*s.x,H*(.5+Math.sin(t*1.5+k)*.05),H*.06,s.vx>0)}else emoji(d.pet,W*s.x,H*s.y-bob,H*sz,s.vx>0)})});
     // 관리인
     if(has('x_keeper'))emoji('🧑‍🌾',W*.5,H*.97,H*.08);
     ctx.fillStyle='rgba(10,10,30,'+(night*.18)+')';ctx.fillRect(0,0,W,H);
@@ -842,6 +867,16 @@ function drawHouse(d,it,W,H,t,night){
     const icons=S.items.map(i=>byId(i.id)).filter(x=>x.cat==='game'&&x.gi).map(x=>x.gi);const sz=Math.min(wh*.7,ww/Math.max(1,icons.length)*.9);
     icons.forEach((e,k)=>emoji(e,wx+ww*(k+.5)/icons.length,wy+wh*.9,sz))}
   ctx.strokeStyle='rgba(0,0,0,.25)';ctx.lineWidth=1;ctx.strokeRect(wx,wy,ww,wh);
+}
+function drawSpa(W,H,t,night){
+  const s=H/400,by=H*.83,cx=W*.64;
+  const steam=(x,y,n)=>{if(reduceMotion)return;ctx.strokeStyle='rgba(255,255,255,'+(.35+night*.2)+')';ctx.lineWidth=2;for(let k=0;k<n;k++){const ph=(t*.6+k/n)%1;ctx.beginPath();for(let j=0;j<=10;j++){const yy=y-ph*30*s-j*2*s;const xx=x+(k-n/2)*7*s+Math.sin(j*.8+t*2+k)*3*s;j?ctx.lineTo(xx,yy):ctx.moveTo(xx,yy)}ctx.stroke()}};
+  if(has('s_resort')){ctx.fillStyle='#8a6a48';ctx.fillRect(W*.86,by-60*s,W*.12,60*s);ctx.fillStyle='#4b5056';ctx.beginPath();ctx.moveTo(W*.85,by-58*s);ctx.lineTo(W*.92,by-86*s);ctx.lineTo(W*.99,by-58*s);ctx.fill();emoji('♨️',W*.92,by-20*s,24*s);steam(W*.92,by-86*s,4)}
+  if(has('s_pool')){ctx.fillStyle='#43b4d6';ctx.fillRect(cx+60*s,by+8*s,150*s,22*s);ctx.strokeStyle='#e8f6fb';ctx.lineWidth=2;ctx.strokeRect(cx+60*s,by+8*s,150*s,22*s)}
+  if(has('s_barrel')){const x=cx-150*s,y=by-4*s;ctx.fillStyle='#a0703f';ctx.beginPath();ctx.ellipse(x,y-22*s,34*s,24*s,0,Math.PI,0);ctx.lineTo(x+34*s,y);ctx.lineTo(x-34*s,y);ctx.fill();ctx.strokeStyle='#6b4524';ctx.lineWidth=1.5;for(let k=-2;k<=2;k++){ctx.beginPath();ctx.moveTo(x+k*12*s,y);ctx.lineTo(x+k*12*s,y-22*s-Math.sqrt(Math.max(0,1-(k*12/34)**2))*24*s);ctx.stroke()}ctx.fillStyle=night>.3?'#ffcf7a':'#5b3a1d';ctx.fillRect(x-6*s,y-26*s,12*s,16*s);ctx.fillStyle='#555';ctx.fillRect(x+18*s,y-56*s,5*s,14*s);steam(x+20*s,y-58*s,2)}
+  if(has('s_tub')){const x=cx+130*s,y=by+18*s;ctx.fillStyle='#7a5532';ctx.fillRect(x-36*s,y-6*s,72*s,10*s);ctx.fillStyle='#6fd0e8';ctx.beginPath();ctx.ellipse(x,y-6*s,32*s,8*s,0,0,7);ctx.fill();ctx.fillStyle='rgba(255,255,255,.5)';for(let k=0;k<5;k++){ctx.beginPath();ctx.arc(x-20*s+k*10*s,y-6*s+Math.sin(t*4+k)*2*s,1.6*s,0,7);ctx.fill()}steam(x,y-12*s,3)}
+  if(has('s_cold')){const x=cx+130*s+50*s,y=by+20*s;ctx.fillStyle='#9fb6c4';ctx.fillRect(x-12*s,y-14*s,24*s,16*s);ctx.fillStyle='#d6f3ff';ctx.fillRect(x-10*s,y-12*s,20*s,4*s)}
+  if(has('s_jjim')){const x=cx-245*s,y=by-30*s;ctx.fillStyle='#c98b55';ctx.beginPath();ctx.ellipse(x,y,34*s,26*s,0,Math.PI,0);ctx.lineTo(x+34*s,y+10*s);ctx.lineTo(x-34*s,y+10*s);ctx.fill();ctx.fillStyle='#5b3a1d';ctx.fillRect(x-7*s,y-10*s,14*s,20*s);steam(x,y-26*s,3)}
 }
 function caption(){
   const L=land(),Hs=house();
