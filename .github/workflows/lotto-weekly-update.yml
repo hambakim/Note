@@ -1,11 +1,15 @@
-# 매주 토요일 21:00(KST)에 새 로또 회차를 받아 통계 리포트와 웹페이지 데이터를 갱신하고 커밋한다.
-# 주의: GitHub의 schedule은 "기본 브랜치"에 있는 워크플로만 실행된다.
+# 매주 토요일 21:00(KST)
+#   1) 새 당첨번호 수집 (동행복권 → 네이버 → smok95 순서로 시도)
+#   2) 다음 회차 추천 10게임을 만들어 고정 (금요일 카톡은 이 번호를 그대로 보냄)
+#   3) 리포트·웹페이지 데이터 갱신 후 커밋 → 1~2분 뒤 웹페이지에 반영
+# 주의: GitHub의 schedule은 "기본 브랜치"에 있는 워크플로만 실행되고, 몇 분~수십 분 늦을 수 있다.
 name: 로또 주간 업데이트
 
 on:
   schedule:
     - cron: "0 12 * * 6"   # 토 12:00 UTC = 토 21:00 KST
-    - cron: "0 0 * * 0"    # 일 00:00 UTC = 일 09:00 KST (토요일에 결과가 늦게 올라온 경우 재시도)
+    - cron: "0 13 * * 6"   # 토 22:00 KST (21시에 결과가 아직 안 올라온 경우 재시도)
+    - cron: "0 0 * * 0"    # 일 09:00 KST (한 번 더 재시도)
   workflow_dispatch:        # Actions 탭에서 수동 실행 버튼
 
 permissions:
@@ -34,19 +38,19 @@ jobs:
       - name: 새 회차 받아오기
         run: python -m lotto_analyzer update
 
-      - name: 새 회차가 있으면 리포트 갱신 후 커밋
+      - name: 다음 회차 추천 10게임 고정 + 리포트·웹페이지 갱신 + 커밋
         run: |
-          if [ -z "$(git status --porcelain data/draws.json)" ]; then
+          if [ -z "$(git status --porcelain data/draws.json)" ] && [ -f data/web.json ]; then
             echo "새 회차 없음 (아직 결과가 안 올라왔거나 이미 최신)"
             exit 0
           fi
+          python -m lotto_analyzer weekly
           python -m lotto_analyzer report --out REPORT.md
           python -m lotto_analyzer web
           LATEST=$(python -c "import json;print(json.load(open('data/draws.json'))[-1]['round'])")
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/draws.json data/web.json REPORT.md
-          git add data/picks.json 2>/dev/null || true
-          git commit -m "로또 ${LATEST}회 당첨번호 반영 및 통계 갱신"
+          git add data/draws.json data/picks.json data/web.json REPORT.md
+          git commit -m "로또 ${LATEST}회 당첨번호 반영, $((LATEST + 1))회 추천 번호 고정"
           git pull --rebase
           git push

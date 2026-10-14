@@ -1,11 +1,21 @@
 # 로또 통계 분석기 (lotto-analyzer)
 
 역대 로또 6/45 당첨번호를 모아서 수치화하고, 원하는 조건에 맞춰 번호 조합을 무작위로 만들어 주는 프로그램입니다.
-매주 토요일 저녁 9시에 새 회차를 자동으로 받아 통계를 갱신하고, **매주 금요일 저녁 6시에 이번 주 구매용 10게임(만 원어치)을 카카오톡으로 보내 줍니다.**
+한 주의 흐름:
+
+| 언제 | 무엇을 |
+|---|---|
+| **토요일 21시** | 당첨번호 수집 → 다음 회차 10게임을 만들어 **고정** → 웹페이지에 바로 표시 |
+| 그 주 내내 | 웹페이지에서 고정된 10게임 확인 |
+| **금요일 18시** | 고정된 10게임을 **그대로** 카카오톡으로 전송 (새로 뽑지 않음) |
+| 다음 토요일 21시 | 결과(몇 등인지) 확인 → 다음 회차 10게임 고정 |
 
 - **웹페이지로 보기: https://hambakim.github.io/Note/lotto-analyzer/** (기본 브랜치에 합친 뒤부터 열림)
 - 파이썬 3.9 이상, **표준 라이브러리만 사용** (`pip install` 필요 없음)
-- 데이터 출처: 동행복권 공식 조회 API (`https://www.dhlottery.co.kr/common.do?method=getLottoNumber&drwNo=회차`)
+- 데이터 출처 (차례로 시도, 번호 검증 후 저장)
+  1. 동행복권 공식 API: 한국 IP에서만 동작 (GitHub 서버에서는 막혀 있음)
+  2. 네이버 검색 결과("로또 N회 당첨번호"): 토요일 추첨 직후 반영, GitHub 서버에서 동작
+  3. [smok95/lotto](https://github.com/smok95/lotto) 공개 JSON: 처음 전체 회차를 한 번에 받을 때 사용
 
 ## 할 수 있는 것
 
@@ -60,7 +70,7 @@ J 03 13 15 16 26 32
 ```
 
 - 10게임끼리 번호가 4개 이상 겹치지 않게 골라서, 비슷한 조합에 돈을 몰아 쓰지 않습니다 (`--max-shared`로 조절).
-- 같은 회차에 다시 돌리면 같은 10게임이 나옵니다 (회차 번호를 시드로 사용). 그래서 카톡으로 받은 번호와 `REPORT.md`의 번호가 같습니다.
+- 처음 만든 번호는 `data/picks.json`에 **고정**되고, 같은 회차에 다시 실행하면 새로 뽑지 않고 고정된 번호를 그대로 씁니다. 그래서 웹페이지·카톡·`REPORT.md`의 번호가 항상 같습니다. 꼭 새로 뽑고 싶으면 `weekly --new`.
 - 만든 조합은 `data/picks.json`에 기록되고, 토요일 추첨 뒤 `python -m lotto_analyzer result`로 몇 등인지 확인할 수 있습니다.
 
 `pick`은 전략·필터를 바꿔 가며 실험할 때 씁니다.
@@ -151,11 +161,11 @@ python -m lotto_analyzer check 3 11 19 25 33 41
 
 `.github/workflows/lotto-weekly-update.yml`이 이미 들어 있습니다.
 
-- 토요일 21:00 KST 실행, 일요일 09:00 KST에 한 번 더 실행(결과가 늦게 올라온 경우 대비)
-- 새 회차를 `data/draws.json`에 추가하고 `REPORT.md`를 다시 만들어 커밋합니다.
+- 토요일 21:00 KST 실행, 22:00과 일요일 09:00에 재시도(결과가 늦게 올라온 경우 대비, 이미 받았으면 아무것도 안 함)
+- 새 회차를 `data/draws.json`에 추가하고, 다음 회차 10게임을 고정(`data/picks.json`)하고, `REPORT.md`와 웹페이지 데이터(`data/web.json`)를 다시 만들어 커밋합니다.
 - **주의 1**: GitHub의 예약 실행(schedule)은 **기본 브랜치에 있는 워크플로만** 동작합니다. 이 브랜치를 기본 브랜치에 합친(merge) 뒤부터 매주 돕니다.
 - **주의 2**: 예약 실행은 GitHub 서버 사정으로 몇 분~수십 분 늦어질 수 있습니다.
-- **주의 3**: 동행복권 사이트가 해외 IP 접속을 막으면 GitHub 서버(미국)에서 조회가 실패할 수 있습니다. 그럴 땐 방법 B를 쓰세요.
+- **주의 3**: 동행복권 사이트는 해외 IP 접속을 막아서 GitHub 서버에서는 네이버·smok95 출처로 자동 전환됩니다.
 - 처음 한 번은 GitHub 저장소 → **Actions** 탭 → `로또 주간 업데이트` → **Run workflow** 로 직접 돌려 전체 데이터를 받아 두면 좋습니다.
 
 ### 방법 B. 내 PC에서 예약 실행
@@ -240,7 +250,7 @@ python -m lotto_analyzer weekly --send   # 10게임 바로 받아 보기
 
 ### 3-A. GitHub Actions로 매주 자동 전송 (PC를 꺼 둬도 됨)
 
-`.github/workflows/lotto-friday-kakao.yml`이 금요일 18:00 KST에 `weekly --send`를 실행하고 `data/picks.json`을 커밋합니다.
+`.github/workflows/lotto-friday-kakao.yml`이 금요일 18:00 KST에 `weekly --send`를 실행해 **토요일에 고정된 10게임을 그대로** 보냅니다. (토요일 수집이 실패해 고정된 번호가 없을 때만 새로 만들어 보냅니다.)
 
 GitHub 저장소 → **Settings → Secrets and variables → Actions → New repository secret** 으로 아래를 등록합니다.
 
