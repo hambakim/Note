@@ -1,0 +1,361 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>로또 통계 분석기</title>
+<meta name="description" content="역대 로또 당첨번호 통계와 이번 주 추천 10게임">
+<style>
+:root {
+  color-scheme: light;
+  --bg: #f4f3f0;
+  --surface: #fcfcfb;
+  --border: #e3e1dc;
+  --text: #0b0b0b;
+  --text-2: #52514e;
+  --muted: #7a7974;
+  --accent: #2a78d6;
+  --accent-soft: #e6effa;
+  --bar: #2a78d6;
+  --bar-dim: #b9cff0;
+  --grid: #ebe9e4;
+  --good: #008300;
+  --ball-1: #fbc400; --ball-2: #69c8f2; --ball-3: #ff7272; --ball-4: #b4b4b4; --ball-5: #b0d840;
+  --ball-ink: #1a1a19;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #121211; --surface: #1a1a19; --border: #2e2d2b;
+    --text: #f0efec; --text-2: #c3c2b7; --muted: #8f8e88;
+    --accent: #3987e5; --accent-soft: #1d2a3b;
+    --bar: #3987e5; --bar-dim: #2c4466; --grid: #2a2928; --good: #3fae3f;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #121211; --surface: #1a1a19; --border: #2e2d2b;
+  --text: #f0efec; --text-2: #c3c2b7; --muted: #8f8e88;
+  --accent: #3987e5; --accent-soft: #1d2a3b;
+  --bar: #3987e5; --bar-dim: #2c4466; --grid: #2a2928; --good: #3fae3f;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--bg); color: var(--text);
+  font: 15px/1.55 -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", sans-serif;
+}
+main { max-width: 760px; margin: 0 auto; padding: 16px 16px 48px; }
+header { margin: 8px 0 16px; }
+h1 { font-size: 22px; margin: 0 0 2px; letter-spacing: -0.02em; }
+.sub { color: var(--muted); font-size: 13px; }
+section {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+  padding: 16px; margin-bottom: 14px;
+}
+h2 { font-size: 16px; margin: 0 0 4px; }
+.desc { color: var(--text-2); font-size: 13px; margin: 0 0 12px; }
+.balls { display: flex; gap: 5px; flex-wrap: nowrap; align-items: center; }
+.ball {
+  width: 30px; height: 30px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 13px; color: var(--ball-ink); flex: none; font-variant-numeric: tabular-nums;
+}
+.ball.sm { width: 24px; height: 24px; font-size: 11px; }
+.ball.hit { box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--text); }
+.plus { color: var(--muted); font-size: 13px; margin: 0 2px; }
+.ticket { display: flex; align-items: center; gap: 10px; padding: 7px 0; border-top: 1px solid var(--border); }
+.ticket:first-of-type { border-top: 0; }
+.label { width: 18px; font-weight: 700; color: var(--text-2); flex: none; }
+.meta { margin-left: auto; color: var(--muted); font-size: 12px; white-space: nowrap; }
+.row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+button {
+  font: inherit; font-size: 13px; white-space: nowrap; border: 1px solid var(--border); background: var(--surface); color: var(--text);
+  padding: 6px 12px; border-radius: 999px; cursor: pointer;
+}
+button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--text); font-weight: 600; }
+.copy { margin-top: 10px; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th, td { padding: 6px 4px; border-bottom: 1px solid var(--border); text-align: left; }
+th { color: var(--text-2); font-weight: 600; }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+tr.total td { font-weight: 700; border-bottom: 0; }
+.stat-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px; }
+.stat { background: var(--bg); border-radius: 10px; padding: 10px; }
+.stat b { display: block; font-size: 18px; font-variant-numeric: tabular-nums; }
+.stat span { color: var(--muted); font-size: 12px; }
+.chips { display: flex; flex-wrap: wrap; gap: 5px; margin: 4px 0 12px; }
+.chart-wrap { position: relative; }
+svg { display: block; width: 100%; height: auto; overflow: visible; }
+.tip {
+  position: absolute; pointer-events: none; background: var(--text); color: var(--surface);
+  font-size: 12px; padding: 6px 8px; border-radius: 6px; max-width: 230px; opacity: 0; transition: opacity .1s;
+  transform: translate(-50%, -100%); z-index: 2;
+}
+.axis { fill: var(--muted); font-size: 11px; }
+details { margin-top: 10px; }
+summary { cursor: pointer; color: var(--text-2); font-size: 13px; }
+.result { padding: 10px 0; border-top: 1px solid var(--border); }
+.result:first-of-type { border-top: 0; }
+.rank { font-weight: 700; color: var(--good); }
+.note { color: var(--text-2); font-size: 12px; }
+.empty { text-align: center; padding: 32px 16px; color: var(--text-2); }
+.hbar { height: 8px; background: var(--bar); border-radius: 0 4px 4px 0; min-width: 2px; }
+.dist td:nth-child(2) { width: 60%; }
+@media (max-width: 420px) {
+  .ball { width: 27px; height: 27px; font-size: 12px; }
+  .balls { gap: 4px; }
+  .stat b { font-size: 16px; }
+}
+</style>
+</head>
+<body>
+<main id="app">
+  <header>
+    <h1>로또 통계 분석기</h1>
+    <div class="sub" id="updated">불러오는 중...</div>
+  </header>
+</main>
+
+<script>
+const $app = document.getElementById("app");
+const fmt = n => String(n).padStart(2, "0");
+const comma = n => n.toLocaleString("ko-KR");
+const ballColor = n => `var(--ball-${n <= 10 ? 1 : n <= 20 ? 2 : n <= 30 ? 3 : n <= 40 ? 4 : 5})`;
+const ball = (n, cls = "") => `<span class="ball ${cls}" style="background:${ballColor(n)}">${fmt(n)}</span>`;
+const balls = (nums, opts = {}) =>
+  `<span class="balls">${nums.map(n => ball(n, `${opts.sm ? "sm" : ""} ${opts.hit && opts.hit.includes(n) ? "hit" : ""}`)).join("")}` +
+  (opts.bonus ? `<span class="plus">+</span>${ball(opts.bonus, opts.sm ? "sm" : "")}` : "") + `</span>`;
+const LABELS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+const el = html => { const s = document.createElement("section"); s.innerHTML = html; $app.appendChild(s); return s; };
+
+function md(dateStr) {
+  const d = new Date(dateStr + "T00:00:00");
+  return `${d.getMonth() + 1}/${d.getDate()}(${"일월화수목금토"[d.getDay()]})`;
+}
+
+function renderThisWeek(w) {
+  const s = el(`
+    <h2>${w.round}회 추천 10게임</h2>
+    <p class="desc">추첨 ${md(w.draw_date)} · ${w.based_on}회까지 분석 · 카카오톡으로 받는 번호와 같습니다</p>
+    <div id="tickets">${w.tickets.map((t, i) => `
+      <div class="ticket"><span class="label">${LABELS[i]}</span>${balls(t)}<span class="meta">합 ${t.reduce((a, b) => a + b, 0)}</span></div>`).join("")}
+    </div>
+    <button class="copy" id="copy">번호 복사</button>`);
+  s.querySelector("#copy").onclick = async e => {
+    const text = `[로또 ${w.round}회 추천]\n` + w.tickets.map((t, i) => `${LABELS[i]} ${t.map(fmt).join(" ")}`).join("\n");
+    try { await navigator.clipboard.writeText(text); e.target.textContent = "복사됨"; }
+    catch { e.target.textContent = "복사 실패 (길게 눌러 선택하세요)"; }
+    setTimeout(() => (e.target.textContent = "번호 복사"), 1500);
+  };
+}
+
+function renderElimination(w, rep) {
+  const removedTotal = w.removed.reduce((a, r) => a + r.count, 0);
+  el(`
+    <h2>어떤 조합을 지웠나</h2>
+    <p class="desc">전체 8,145,060개 조합에서 당첨 가능성이 낮을 것으로 보는 조합을 먼저 지우고, 남은 후보에서 10게임을 골랐습니다.</p>
+    <div class="stat-row">
+      <div class="stat"><b>8,145,060</b><span>전체 조합</span></div>
+      <div class="stat"><b>${comma(removedTotal)}</b><span>지운 조합</span></div>
+      <div class="stat"><b>${comma(w.remaining)}</b><span>남은 후보</span></div>
+    </div>
+    <table>
+      <tr><th>지운 조건</th><th class="num">개수</th></tr>
+      ${w.removed.map(r => `<tr><td>${r.reason}</td><td class="num">약 ${comma(r.count)}</td></tr>`).join("")}
+    </table>
+    <details open>
+      <summary>이전 당첨번호 중복 검사</summary>
+      <ul class="note">${rep.lines.map(l => `<li>${l}</li>`).join("")}</ul>
+    </details>
+    <p class="note">개수는 무작위 10만 개 조합을 검사해 추정한 값이고, 여러 조건에 걸리면 먼저 걸린 조건으로 셉니다.</p>`);
+}
+
+function renderLatest(d) {
+  el(`
+    <h2>최근 당첨번호</h2>
+    <p class="desc">총 ${comma(d.total_draws)}회</p>
+    ${d.latest_draws.map(x => `
+      <div class="ticket"><span class="label" style="width:auto;min-width:44px">${x.round}회</span>${balls(x.numbers, { sm: true, bonus: x.bonus })}<span class="meta">${x.date}</span></div>`).join("")}`);
+}
+
+function renderResults(results) {
+  if (!results.length) {
+    el(`<h2>지난 추천 결과</h2><p class="desc">추천 기록이 쌓이면 토요일 추첨 뒤 여기에 등수가 표시됩니다.</p>`);
+    return;
+  }
+  el(`
+    <h2>지난 추천 결과</h2>
+    <p class="desc">추천한 10게임을 실제 당첨번호와 비교했습니다. 테두리가 있는 번호가 맞은 번호입니다.</p>
+    ${results.map((r, idx) => {
+      const won = r.tickets.filter(t => t.rank);
+      const summary = won.length ? won.map(t => `${t.rank}등`).join(", ") : "당첨 없음";
+      return `<details class="result" ${idx === 0 ? "open" : ""}>
+        <summary><b>${r.round}회</b> · ${summary}</summary>
+        <div style="margin:8px 0">당첨 ${balls(r.numbers, { sm: true, bonus: r.bonus })}</div>
+        ${r.tickets.map((t, i) => `<div class="ticket"><span class="label">${LABELS[i]}</span>
+          ${balls(t.numbers, { sm: true, hit: r.numbers })}
+          <span class="meta ${t.rank ? "rank" : ""}">${t.rank ? t.rank + "등" : "-"}</span></div>`).join("")}
+      </details>`;
+    }).join("")}`);
+}
+
+function renderFrequency(d) {
+  const s = el(`
+    <h2>번호별 출현 횟수</h2>
+    <p class="desc" id="freq-desc"></p>
+    <div class="row" style="margin-bottom:10px;gap:6px">
+      <button data-range="all" aria-pressed="true">전체</button>
+      <button data-range="recent" aria-pressed="false">최근 ${d.recent}회</button>
+      <span style="flex:1;min-width:4px"></span>
+      <button data-sort="num" aria-pressed="true">번호순</button>
+      <button data-sort="count" aria-pressed="false">많은 순</button>
+    </div>
+    <div class="chart-wrap"><svg id="freq" role="img"></svg><div class="tip" id="tip"></div></div>
+    <details><summary>표로 보기</summary>
+      <table id="freq-table"><tr><th>번호</th><th class="num">전체</th><th class="num">최근 ${d.recent}회</th><th class="num">미출현</th></tr>
+      ${d.frequency.map(f => `<tr><td>${ball(f.n, "sm")}</td><td class="num">${f.count}</td><td class="num">${f.recent}</td><td class="num">${f.gap}회</td></tr>`).join("")}
+      </table>
+    </details>`);
+  let range = "all", sort = "num";
+  const svg = s.querySelector("#freq"), tip = s.querySelector("#tip");
+
+  function draw() {
+    const key = range === "all" ? "count" : "recent";
+    const rows = [...d.frequency].sort((a, b) => sort === "num" ? a.n - b.n : b[key] - a[key] || a.n - b.n);
+    const max = Math.max(...rows.map(r => r[key]));
+    const avg = rows.reduce((a, r) => a + r[key], 0) / rows.length;
+    const top = [...rows].sort((a, b) => b[key] - a[key]).slice(0, 3).map(r => `${r.n}번(${r[key]}회)`).join(", ");
+    s.querySelector("#freq-desc").textContent = `가장 많이 나온 번호: ${top} · 평균 ${avg.toFixed(1)}회`;
+
+    // 화면 실제 너비로 그려서 폰에서도 글자가 작아지지 않게 한다
+    const W = Math.max(300, svg.parentElement.clientWidth), H = W < 500 ? 220 : 260;
+    const padL = 30, padB = 22, padT = 8, innerW = W - padL, innerH = H - padB - padT;
+    const step = innerW / rows.length, bw = Math.max(2, step - 2);
+    // 눈금은 1·2·5 단위로 딱 떨어지게
+    const raw = max / 4, mag = 10 ** Math.floor(Math.log10(raw || 1));
+    const tick = [1, 2, 5, 10].map(m => m * mag).find(t => t >= raw);
+    const niceMax = Math.ceil(max / tick) * tick || tick;
+    const y = v => padT + innerH - (v / niceMax) * innerH;
+    let g = "";
+    for (let v = 0; v <= niceMax; v += tick) {
+      const yy = y(v);
+      g += `<line x1="${padL}" x2="${W}" y1="${yy}" y2="${yy}" stroke="var(--grid)" stroke-width="1"/>`;
+      g += `<text class="axis" x="${padL - 6}" y="${yy + 3}" text-anchor="end">${v}</text>`;
+    }
+    g += `<line x1="${padL}" x2="${W}" y1="${y(avg)}" y2="${y(avg)}" stroke="var(--muted)" stroke-dasharray="3 3" stroke-width="1"/>`;
+    rows.forEach((r, i) => {
+      const x = padL + i * step + 1, v = r[key], yt = y(v), h = padT + innerH - yt, rr = Math.min(4, bw / 2, h);
+      const isHot = d.hot.includes(r.n) && range === "all";
+      const path = h > 0
+        ? `M${x},${padT + innerH} V${yt + rr} Q${x},${yt} ${x + rr},${yt} H${x + bw - rr} Q${x + bw},${yt} ${x + bw},${yt + rr} V${padT + innerH} Z`
+        : "";
+      g += `<g class="bar" data-i="${i}">
+        <rect x="${x - 1}" y="${padT}" width="${step}" height="${innerH + padB}" fill="transparent"/>
+        <path d="${path}" fill="${isHot || range === "recent" ? "var(--bar)" : "var(--bar-dim)"}"/>
+        ${(sort === "count" ? i % (W < 500 ? 4 : 2) === 0 : r.n % 5 === 0 || r.n === 1) ? `<text class="axis" x="${x + bw / 2}" y="${H - 6}" text-anchor="middle">${r.n}</text>` : ""}
+      </g>`;
+    });
+    svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+    svg.setAttribute("aria-label", `번호별 출현 횟수 막대그래프. ${s.querySelector("#freq-desc").textContent}`);
+    svg.innerHTML = g;
+
+    svg.querySelectorAll(".bar").forEach(b => {
+      const show = ev => {
+        const r = rows[+b.dataset.i];
+        tip.innerHTML = `<b>${r.n}번</b> · 전체 ${r.count}회<br>최근 ${d.recent}회 중 ${r.recent}회 · ${r.gap ? r.gap + "회째 안 나옴" : "직전 회차에 나옴"}`;
+        const box = svg.getBoundingClientRect(), wrap = svg.parentElement.getBoundingClientRect();
+        const bx = b.querySelector("path").getBBox();
+        const scale = box.width / W;
+        let left = (bx.x + bx.width / 2) * scale;
+        const half = tip.offsetWidth / 2 + 2;  // 말풍선이 화면 밖으로 나가지 않게
+        left = Math.min(Math.max(left, half), wrap.width - half);
+        tip.style.left = left + "px";
+        tip.style.top = ((bx.y || padT + innerH) * scale - 6) + "px";
+        tip.style.opacity = 1;
+      };
+      b.addEventListener("mouseenter", show);
+      b.addEventListener("click", show);
+      b.addEventListener("mouseleave", () => (tip.style.opacity = 0));
+    });
+  }
+  s.querySelectorAll("button[data-range]").forEach(btn => btn.onclick = () => {
+    range = btn.dataset.range;
+    s.querySelectorAll("button[data-range]").forEach(x => x.setAttribute("aria-pressed", x === btn));
+    draw();
+  });
+  s.querySelectorAll("button[data-sort]").forEach(btn => btn.onclick = () => {
+    sort = btn.dataset.sort;
+    s.querySelectorAll("button[data-sort]").forEach(x => x.setAttribute("aria-pressed", x === btn));
+    draw();
+  });
+  draw();
+  let resizeTimer;
+  window.addEventListener("resize", () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(draw, 150); });
+  const legend = document.createElement("p");
+  legend.className = "note";
+  legend.innerHTML = "진한 막대: 전체 기간 많이 나온 10개 · 점선: 평균 · 막대를 누르면 자세히 보입니다";
+  s.querySelector(".chart-wrap").after(legend);
+}
+
+function renderHotCold(d) {
+  el(`
+    <h2>많이 나온 번호 · 적게 나온 번호</h2>
+    <p class="desc">전체 ${comma(d.total_draws)}회 기준</p>
+    <div class="note">많이 나온 10개</div><div class="chips">${d.hot.map(n => ball(n, "sm")).join("")}</div>
+    <div class="note">적게 나온 10개</div><div class="chips">${d.cold.map(n => ball(n, "sm")).join("")}</div>
+    <div class="note">가장 오래 안 나온 10개</div>
+    <div class="chips">${d.overdue.map(o => `<span class="row" style="gap:3px">${ball(o.n, "sm")}<span class="note">${o.gap}회</span></span>`).join("")}</div>`);
+}
+
+function renderPairs(d) {
+  const max = d.pairs[0]?.count || 1;
+  el(`
+    <h2>자주 함께 나온 번호</h2>
+    <p class="desc">같은 회차에 함께 당첨된 두 번호 TOP 10</p>
+    <table class="dist">
+      ${d.pairs.map(p => `<tr><td>${balls(p.pair, { sm: true })}</td>
+        <td><div class="hbar" style="width:${(p.count / max) * 100}%"></div></td>
+        <td class="num">${p.count}회</td></tr>`).join("")}
+    </table>`);
+}
+
+function renderShape(d) {
+  const sh = d.shape, maxOdd = Math.max(...sh.odd.map(o => o.ratio));
+  el(`
+    <h2>당첨 조합의 모양</h2>
+    <p class="desc">번호 합계 가운데 80% 범위: <b>${sh.sum_range[0]} ~ ${sh.sum_range[1]}</b></p>
+    <table class="dist">
+      <tr><th>홀수 개수</th><th></th><th class="num">비율</th></tr>
+      ${sh.odd.map(o => `<tr><td>${o.k}개</td><td><div class="hbar" style="width:${(o.ratio / maxOdd) * 100}%"></div></td>
+        <td class="num">${(o.ratio * 100).toFixed(1)}%</td></tr>`).join("")}
+    </table>
+    <p class="note" style="margin-top:10px">최장 연속번호: ${sh.run.map(r => `${r.k}연속 ${(r.ratio * 100).toFixed(1)}%`).join(" · ")}</p>`);
+}
+
+function renderNote() {
+  el(`<p class="note" style="margin:0">로또는 매 회 독립 추첨이라 어떤 조합이든 1등 확률은 8,145,060분의 1로 같습니다.
+    지우는 조건은 살 조합을 고르는 기준이며, 사람들이 많이 고르는 모양을 피해 당첨 시 나눠 가질 사람을 줄이는 효과가 있습니다.</p>`);
+}
+
+fetch("data/web.json?t=" + Date.now())
+  .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
+  .then(d => {
+    document.getElementById("updated").textContent =
+      `${d.latest.round}회(${d.latest.date})까지 반영 · ${d.updated_at} 업데이트`;
+    renderThisWeek(d.this_week);
+    renderElimination(d.this_week, d.repeat);
+    renderResults(d.results);
+    renderLatest(d);
+    renderFrequency(d);
+    renderHotCold(d);
+    renderPairs(d);
+    renderShape(d);
+    renderNote();
+  })
+  .catch(() => {
+    document.getElementById("updated").textContent = "";
+    el(`<div class="empty">아직 데이터가 없습니다.<br>
+      GitHub 저장소 → Actions → <b>로또 주간 업데이트</b> → Run workflow 를 한 번 실행해 주세요.</div>`);
+  });
+</script>
+</body>
+</html>
