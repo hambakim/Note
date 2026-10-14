@@ -5,7 +5,7 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from lotto_analyzer import kakao, weekly
+from lotto_analyzer import kakao, web, weekly
 from test_lotto import fake_draws
 
 
@@ -52,6 +52,20 @@ class WeeklyTest(unittest.TestCase):
                                "tickets": [[1, 2, 3, 4, 5, 7]]}, path)
             res = weekly.check_results([draw], weekly.load_picks(path))
             self.assertEqual(res[0][2], [([1, 2, 3, 4, 5, 7], 2)])
+
+
+class WebDataTest(unittest.TestCase):
+    def test_web_json_matches_weekly_picks(self):
+        draws = fake_draws(300)
+        picks = weekly.make_weekly_picks(draws)
+        history = {"300": {"draw_date": "2020-01-01", "based_on": 299, "tickets": [draws[-1]["numbers"]]}}
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "web.json"
+            web.write_web_data(draws, history, path)
+            data = json.loads(path.read_text(encoding="utf-8"))
+        self.assertEqual(data["this_week"]["tickets"], picks["tickets"])  # 카톡과 같은 번호
+        self.assertEqual(len(data["frequency"]), 45)
+        self.assertEqual(data["results"][0]["tickets"][0]["rank"], 1)
 
 
 class FakeKakao:

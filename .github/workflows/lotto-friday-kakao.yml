@@ -61,11 +61,13 @@ jobs:
           gh secret set KAKAO_REFRESH_TOKEN --repo "${{ github.repository }}" < "$NEW_TOKEN_FILE"
           echo "KAKAO_REFRESH_TOKEN 시크릿을 갱신했습니다."
 
-      - name: 추천 기록 커밋 (토요일 결과 확인용)
+      - name: 추천 기록 커밋 (토요일 결과 확인용) + 웹페이지 데이터 갱신
+        if: ${{ !cancelled() }}   # 카톡 전송이 실패해도 웹페이지에는 이번 주 번호가 올라가게
         run: |
+          python -m lotto_analyzer web
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/picks.json data/draws.json
+          git add data/picks.json data/draws.json data/web.json
           if git diff --cached --quiet; then exit 0; fi
           ROUND=$(python -c "import json;print(max(map(int, json.load(open('data/picks.json')))))")
           git commit -m "로또 ${ROUND}회 추천 조합 기록"

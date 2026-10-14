@@ -8,6 +8,7 @@
   weekly [--send]      이번 주 구매용 10게임 만들고 기록 (--send: 카카오톡 전송)
   result [--send]      지난 추천 조합의 당첨 결과 확인
   kakao login|test     카카오톡 나에게 보내기 설정
+  web                  웹페이지용 data/web.json 만들기
   import-csv 파일      CSV(회차,날짜,번호1~6,보너스)로 데이터 넣기 (API가 막혔을 때)
 """
 
@@ -17,7 +18,7 @@ import os
 import sys
 from pathlib import Path
 
-from . import fetch, kakao, stats, weekly
+from . import fetch, kakao, stats, web, weekly
 from .generator import STRATEGIES, Filters, Generator
 from .report import build_report
 
@@ -224,6 +225,12 @@ def cmd_kakao(args):
         _report_new_refresh_token(client)
 
 
+def cmd_web(args):
+    draws = _load(args)
+    data = web.write_web_data(draws, weekly.load_picks(args.picks), args.out)
+    print(f"{args.out} 저장 ({data['latest']['round']}회까지, 이번 주 {data['this_week']['round']}회 추천 포함)")
+
+
 def cmd_import_csv(args):
     draws = {d["round"]: d for d in fetch.load_draws(args.data)}
     with open(args.file, encoding="utf-8-sig", newline="") as f:
@@ -305,6 +312,11 @@ def build_parser():
     s.add_argument("action", choices=("login", "test"))
     s.add_argument("code", nargs="?", help="login: 로그인 후 주소창 주소 또는 code")
     s.set_defaults(func=cmd_kakao)
+
+    s = sub.add_parser("web", help="웹페이지용 데이터 만들기")
+    s.add_argument("--out", default=web.WEB_PATH)
+    s.add_argument("--picks", default=weekly.PICKS_PATH)
+    s.set_defaults(func=cmd_web)
 
     s = sub.add_parser("import-csv", help="CSV로 데이터 넣기")
     s.add_argument("file")

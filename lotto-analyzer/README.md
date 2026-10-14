@@ -3,6 +3,7 @@
 역대 로또 6/45 당첨번호를 모아서 수치화하고, 원하는 조건에 맞춰 번호 조합을 무작위로 만들어 주는 프로그램입니다.
 매주 토요일 저녁 9시에 새 회차를 자동으로 받아 통계를 갱신하고, **매주 금요일 저녁 6시에 이번 주 구매용 10게임(만 원어치)을 카카오톡으로 보내 줍니다.**
 
+- **웹페이지로 보기: https://hambakim.github.io/Note/lotto-analyzer/** (기본 브랜치에 합친 뒤부터 열림)
 - 파이썬 3.9 이상, **표준 라이브러리만 사용** (`pip install` 필요 없음)
 - 데이터 출처: 동행복권 공식 조회 API (`https://www.dhlottery.co.kr/common.do?method=getLottoNumber&drwNo=회차`)
 
@@ -173,6 +174,33 @@ $trigger = New-ScheduledTaskTrigger -Weekly -DaysOfWeek Saturday -At 9pm
 Register-ScheduledTask -TaskName "LottoWeeklyUpdate" -Action $action -Trigger $trigger
 ```
 
+## 웹페이지로 보기
+
+**https://hambakim.github.io/Note/lotto-analyzer/** 를 폰이나 PC 브라우저로 열면 됩니다. 로그인은 필요 없습니다.
+
+| 화면 | 내용 |
+|---|---|
+| 이번 주 추천 10게임 | 카카오톡으로 받는 번호와 같음, **번호 복사** 버튼 |
+| 어떤 조합을 지웠나 | 전체 8,145,060개 → 지운 조건별 개수 → 남은 후보, 이전 당첨번호 중복 검사 결과 |
+| 지난 추천 결과 | 회차별로 10게임 중 몇 등이 있었는지, 맞은 번호 표시 |
+| 최근 당첨번호 | 최근 5회 |
+| 번호별 출현 횟수 | 막대그래프 (전체/최근 50회, 번호순/많은 순), 막대를 누르면 자세히, 표로 보기 |
+| 많이/적게/오래 안 나온 번호, 자주 함께 나온 번호, 당첨 조합 모양 | 통계 |
+
+동작 방식
+- 페이지는 `lotto-analyzer/index.html` 한 파일이고, 계산은 하지 않고 `data/web.json`만 읽어서 보여 줍니다.
+- `data/web.json`은 토요일 업데이트와 금요일 카톡 워크플로가 실행될 때마다 새로 만들어져 커밋됩니다. 커밋 후 1~2분 뒤 페이지에 반영됩니다.
+- 카톡 설정을 아직 안 했어도 금요일 워크플로가 이번 주 10게임을 웹페이지에 올려 줍니다 (카톡 전송 단계만 실패로 표시됨).
+- 홈 화면에 추가해 두면 앱처럼 바로 열 수 있습니다 (안드로이드 크롬: ⋮ → 홈 화면에 추가 / 아이폰 사파리: 공유 → 홈 화면에 추가).
+
+내 PC에서 미리 보기:
+
+```bash
+cd lotto-analyzer
+python -m lotto_analyzer web          # data/web.json 만들기
+python -m http.server 8000            # 브라우저에서 http://localhost:8000 열기
+```
+
 ## 금요일 18시 카카오톡으로 받기
 
 카카오 공식 API의 **'나에게 보내기'** 기능을 씁니다. 내 카카오톡 **'나와의 채팅'**방에 메시지가 옵니다.
@@ -276,6 +304,8 @@ python -m lotto_analyzer import-csv lotto.csv
 | `lotto_analyzer/stats.py` | 중복 당첨 검사·제외 판단(`repeat_check`), 출현 횟수, 미출현 기간, 번호 쌍/3개 묶음, 같은 조합 재등장, 홀짝·합계·연속번호 분포 |
 | `lotto_analyzer/generator.py` | 1단계 이전 당첨번호 제외 + 2단계 전략별 번호 생성·모양 필터 |
 | `lotto_analyzer/weekly.py` | 이번 주 10게임 만들기, `data/picks.json` 기록, 지난 추천 결과 확인, 카톡 문구 |
+| `index.html` | 웹페이지 (`data/web.json`을 읽어 표시) |
+| `lotto_analyzer/web.py` | 웹페이지용 `data/web.json` 만들기 |
 | `lotto_analyzer/kakao.py` | 카카오 로그인·토큰 갱신·나에게 보내기 |
 | `lotto_analyzer/report.py` | `REPORT.md` 생성 |
 | `lotto_analyzer/cli.py` | 명령줄 명령 |
