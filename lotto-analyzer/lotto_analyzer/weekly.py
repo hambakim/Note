@@ -4,11 +4,14 @@
 1. 이전 당첨번호 중복 검사 -> 이전 1등 조합 제외 여부 결정
 2. 당첨 가능성이 낮을 것으로 보는 조합(이전 1등 조합, 쏠린 모양)을 지운다
 3. 남은 조합 중에서 mix 전략으로 10게임을 뽑는다 (서로 3개 이하로만 겹치게)
-4. data/picks.json에 회차별로 기록 -> 토요일 추첨 후 결과 확인에 쓴다
+4. data/picks.json에 회차별로 기록
+   - 토요일 21시 당첨번호 수집 직후 다음 회차 번호를 만들어 고정한다 (웹페이지에 바로 표시)
+   - 금요일 18시에는 새로 만들지 않고 고정된 번호를 그대로 카카오톡으로 보낸다
+   - 다음 토요일 추첨 후 결과 확인에 쓴다
 """
 
 import json
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
 from . import stats
@@ -51,13 +54,41 @@ def save_picks(picks, path=PICKS_PATH):
     """회차 번호를 키로 저장. 같은 회차를 다시 만들면 덮어쓴다."""
     path = Path(path)
     data = load_picks(path)
+    kst = timezone(timedelta(hours=9))
     data[str(picks["round"])] = {
         "draw_date": picks["draw_date"],
         "based_on": picks["based_on"],
+        "created_at": picks.get("created_at") or datetime.now(kst).strftime("%Y-%m-%d %H:%M"),
         "tickets": picks["tickets"],
+        "excluded_past": picks["excluded_past"],
+        "removed": picks["removed"],
+        "remaining": picks["remaining"],
+        "repeat_lines": picks["repeat_lines"],
     }
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(data, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
+
+
+def saved_picks_for_next_round(draws, path=PICKS_PATH):
+    """다음 회차 번호가 이미 고정돼 있으면 그대로 돌려준다 (없으면 None)."""
+    rnd, _ = next_round_info(draws)
+    p = load_picks(path).get(str(rnd))
+    if not p or "removed" not in p:
+        return None
+    return {"round": rnd, **p, "removed": [tuple(r) for r in p["removed"]]}
+
+
+def get_weekly_picks(draws, path=PICKS_PATH, count=10, max_shared=3, regenerate=False, save=True):
+    """고정된 이번 주 번호를 가져오고, 없으면(또는 regenerate면) 새로 만들어 고정한다.
+    돌려주는 값의 "saved"가 True면 이전에 고정해 둔 번호."""
+    if not regenerate:
+        p = saved_picks_for_next_round(draws, path)
+        if p:
+            return {**p, "saved": True}
+    p = make_weekly_picks(draws, count=count, max_shared=max_shared)
+    if save:
+        save_picks(p, path)
+    return {**p, "saved": False}
 
 
 def rank(ticket, draw):

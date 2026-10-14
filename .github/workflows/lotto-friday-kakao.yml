@@ -1,4 +1,5 @@
-# 매주 금요일 18:00(KST)에 이번 주 추천 10게임을 만들어 카카오톡 '나에게 보내기'로 전송한다.
+# 매주 금요일 18:00(KST)에 토요일에 고정해 둔 이번 주 추천 10게임을 카카오톡 '나에게 보내기'로 전송한다.
+# (토요일 수집이 실패해서 고정된 번호가 없을 때만 여기서 새로 만든다)
 # 주의: GitHub의 schedule은 "기본 브랜치"에 있는 워크플로만 실행되고, 몇 분~수십 분 늦을 수 있다.
 #
 # 필요한 저장소 시크릿 (Settings → Secrets and variables → Actions)
@@ -37,7 +38,7 @@ jobs:
         run: python -m lotto_analyzer update
         continue-on-error: true
 
-      - name: 추천 10게임 만들고 카카오톡 전송
+      - name: 고정된 10게임 카카오톡 전송
         env:
           KAKAO_REST_API_KEY: ${{ secrets.KAKAO_REST_API_KEY }}
           KAKAO_REFRESH_TOKEN: ${{ secrets.KAKAO_REFRESH_TOKEN }}

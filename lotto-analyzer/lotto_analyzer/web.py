@@ -14,13 +14,14 @@ WEB_PATH = Path(__file__).resolve().parent.parent / "data" / "web.json"
 KST = timezone(timedelta(hours=9))
 
 
-def build_web_data(draws, picks_history, recent=50):
+def build_web_data(draws, picks_history, recent=50, picks_path=weekly.PICKS_PATH):
     freq = stats.number_frequency(draws)
     r_freq = stats.number_frequency(draws[-recent:])
     gap = stats.last_seen_gap(draws)
     hot, cold, _ = stats.hot_cold(draws, size=10)
     rc = stats.repeat_check(draws)
-    wp = weekly.make_weekly_picks(draws)
+    # 토요일에 고정해 둔 번호가 있으면 그대로 보여 준다 (금요일 카톡과 같은 번호)
+    wp = weekly.saved_picks_for_next_round(draws, picks_path) or weekly.make_weekly_picks(draws)
     lo, hi = stats.sum_range(draws)
     total = len(draws)
     odd = stats.shape_distribution(draws, stats.odd_count)
@@ -69,13 +70,14 @@ def build_web_data(draws, picks_history, recent=50):
             "tickets": wp["tickets"],
             "removed": [{"reason": r, "count": n} for r, n in wp["removed"]],
             "remaining": wp["remaining"],
+            "created_at": wp.get("created_at"),
         },
         "results": results,
     }
 
 
-def write_web_data(draws, picks_history, path=WEB_PATH):
-    data = build_web_data(draws, picks_history)
+def write_web_data(draws, picks_history, path=WEB_PATH, picks_path=weekly.PICKS_PATH):
+    data = build_web_data(draws, picks_history, picks_path=picks_path)
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(data, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")

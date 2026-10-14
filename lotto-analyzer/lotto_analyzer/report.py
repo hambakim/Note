@@ -73,7 +73,8 @@ def build_report(draws, recent=50, picks=10, seed=None):
         f"{k}연속 {run[k] / total:.1%}" for k in sorted(run)))
     w(f"\n번호 합계 가운데 80% 범위: **{lo} ~ {hi}**\n")
 
-    wp = weekly.make_weekly_picks(draws, count=picks, seed=seed)
+    wp = (weekly.saved_picks_for_next_round(draws) if seed is None else None) \
+        or weekly.make_weekly_picks(draws, count=picks, seed=seed)
     w(f"## 6. {wp['round']}회 추천 조합 ({len(wp['tickets'])}게임)\n")
     w("당첨 가능성이 낮을 것으로 보는 조합을 먼저 지우고, 남은 조합 중에서 골랐습니다. "
       "(전체 8,145,060개, 먼저 걸린 조건 기준 추정)\n")

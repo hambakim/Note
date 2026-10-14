@@ -5,7 +5,7 @@
   check 1 2 3 4 5 6    내 조합이 역대에 몇 등까지 맞았는지 확인
   pick                 조건에 맞는 번호 조합 만들기
   report               Markdown 리포트 파일 만들기
-  weekly [--send]      이번 주 구매용 10게임 만들고 기록 (--send: 카카오톡 전송)
+  weekly [--send]      이번 주 10게임 (고정된 번호가 있으면 그대로, 없으면 새로 만들어 고정)
   result [--send]      지난 추천 조합의 당첨 결과 확인
   kakao login|test     카카오톡 나에게 보내기 설정
   web                  웹페이지용 data/web.json 만들기
@@ -158,7 +158,11 @@ def cmd_report(args):
 
 def cmd_weekly(args):
     draws = _load(args)
-    picks = weekly.make_weekly_picks(draws, count=args.count, max_shared=args.max_shared)
+    picks = weekly.get_weekly_picks(draws, args.picks, count=args.count, max_shared=args.max_shared,
+                                    regenerate=args.new, save=not args.no_save)
+    if picks["saved"]:
+        print(f"\n{picks['round']}회 번호는 {picks.get('created_at', '')}에 이미 고정돼 있어 그대로 사용합니다. "
+              "(새로 만들려면 --new)")
     print("\n[1단계] 이전 당첨번호 중복 검사")
     for line in picks["repeat_lines"]:
         print("  " + line)
@@ -168,11 +172,9 @@ def cmd_weekly(args):
     print(f"  => 남은 후보 약 {picks['remaining']:,}개")
     print(f"\n[3단계] 남은 후보에서 {len(picks['tickets'])}게임 선택 "
           f"(많이 나온 번호 3 + 덜 나온 번호 2 + 무작위 1, 조합끼리 {args.max_shared}개 이하로만 겹침)\n")
-    message = weekly.format_message(picks)
-    print(message)
-    if not args.no_save:
-        weekly.save_picks(picks, args.picks)
-        print(f"\n{picks['round']}회 추천 조합을 {args.picks}에 기록했습니다.")
+    print(weekly.format_message(picks))
+    if not picks["saved"] and not args.no_save:
+        print(f"\n{picks['round']}회 추천 조합을 {args.picks}에 고정했습니다.")
     if args.send:
         client = kakao.KakaoClient()
         n = sum(client.send_long_text(part) for part in weekly.format_message_parts(picks))
@@ -227,7 +229,7 @@ def cmd_kakao(args):
 
 def cmd_web(args):
     draws = _load(args)
-    data = web.write_web_data(draws, weekly.load_picks(args.picks), args.out)
+    data = web.write_web_data(draws, weekly.load_picks(args.picks), args.out, picks_path=args.picks)
     print(f"{args.out} 저장 ({data['latest']['round']}회까지, 이번 주 {data['this_week']['round']}회 추천 포함)")
 
 
@@ -299,6 +301,7 @@ def build_parser():
     s.add_argument("--max-shared", type=int, default=3, help="추천 조합끼리 최대 겹치는 번호 수 (기본 3)")
     s.add_argument("--picks", default=weekly.PICKS_PATH, help="추천 기록 파일")
     s.add_argument("--no-save", action="store_true", help="기록하지 않기")
+    s.add_argument("--new", action="store_true", help="이미 고정된 번호가 있어도 새로 만들기")
     s.add_argument("--send", action="store_true", help="카카오톡 나에게 보내기")
     s.set_defaults(func=cmd_weekly)
 
