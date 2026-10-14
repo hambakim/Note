@@ -3,7 +3,7 @@
 from datetime import datetime, timedelta, timezone
 
 from . import stats
-from .generator import Generator
+from . import weekly
 
 KST = timezone(timedelta(hours=9))
 
@@ -12,7 +12,7 @@ def _fmt(nums):
     return " ".join(f"{n:02d}" for n in nums)
 
 
-def build_report(draws, recent=50, picks=5, seed=None):
+def build_report(draws, recent=50, picks=10, seed=None):
     if not draws:
         return "# 로또 통계\n\n데이터가 없습니다. `python -m lotto_analyzer update`를 먼저 실행하세요.\n"
 
@@ -73,10 +73,27 @@ def build_report(draws, recent=50, picks=5, seed=None):
         f"{k}연속 {run[k] / total:.1%}" for k in sorted(run)))
     w(f"\n번호 합계 가운데 80% 범위: **{lo} ~ {hi}**\n")
 
-    w(f"## 6. 이번 주 추천 조합 (mix 전략, {picks}개)\n")
-    w("3번 판단에 따라 이전 1등 조합을 제외한 뒤, 많이 나온 번호 3개 + 덜 나온/오래 안 나온 번호 2개 + 무작위 1개로 만들었습니다.\n")
-    for i, t in enumerate(Generator(draws, seed=seed).generate(count=picks), 1):
-        w(f"{i}. `{_fmt(t.numbers)}`  (합계 {t.total})")
-    w("\n> 로또 추첨은 매 회 독립 시행이라 어떤 조합이든 1등 확률은 8,145,060분의 1로 같습니다. "
-      "이 통계는 재미와 번호 고르는 기준용입니다.\n")
+    wp = weekly.make_weekly_picks(draws, count=picks, seed=seed)
+    w(f"## 6. {wp['round']}회 추천 조합 ({len(wp['tickets'])}게임)\n")
+    w("당첨 가능성이 낮을 것으로 보는 조합을 먼저 지우고, 남은 조합 중에서 골랐습니다. "
+      "(전체 8,145,060개, 먼저 걸린 조건 기준 추정)\n")
+    w("| 지운 조건 | 개수 |\n|---|---:|")
+    for reason, n in wp["removed"]:
+        w(f"| {reason} | 약 {n:,} |")
+    w(f"| **남은 후보** | **약 {wp['remaining']:,}** |\n")
+    for label, t in zip(weekly.LABELS, wp["tickets"]):
+        w(f"- {label}) `{_fmt(t)}`  (합계 {sum(t)})")
+    w("")
+
+    results = weekly.check_results(draws, weekly.load_picks())
+    if results:
+        w("## 7. 지난 추천 조합 결과\n")
+        w("| 회차 | 당첨번호 | 1등 | 2등 | 3등 | 4등 | 5등 |\n|---|---|---:|---:|---:|---:|---:|")
+        for rnd, draw, rows in reversed(results[-10:]):
+            cnt = [sum(1 for _, r in rows if r == k) for k in range(1, 6)]
+            w(f"| {rnd} | `{_fmt(draw['numbers'])}` + {draw['bonus']:02d} | " + " | ".join(map(str, cnt)) + " |")
+        w("")
+
+    w("> 로또 추첨은 매 회 독립 시행이라 남은 조합 하나하나의 1등 확률도 8,145,060분의 1입니다. "
+      "지우는 조건은 '살 조합을 고르는 기준'이고, 흔한 모양을 피해 당첨 시 나눠 가질 사람을 줄이는 효과가 있습니다.\n")
     return "\n".join(out)

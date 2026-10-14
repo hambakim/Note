@@ -100,6 +100,32 @@ class Generator:
             return "번호대가 한쪽에 몰림"
         return None
 
+    def elimination_summary(self, samples=100_000):
+        """전체 8,145,060개 조합 중 각 조건으로 몇 개가 지워지고 몇 개가 남는지 추정.
+
+        모든 조합을 다 검사하면 오래 걸리므로, 무작위 조합 samples개를 검사해 비율로 추정한다.
+        이전 1등 조합 수는 정확한 값을 쓴다.
+        """
+        rng = random.Random(0)  # 매번 같은 추정값이 나오도록 고정
+        total = stats.TOTAL_COMBOS
+        removed = {}
+        passed = 0
+        for _ in range(samples):
+            nums = sorted(rng.sample(range(1, 46), 6))
+            reason = self.reject_reason(nums)
+            if reason is None:
+                passed += 1
+            elif reason != "이전 1등 조합과 같음":  # 표본에 거의 안 걸리므로 아래에서 정확히 셈
+                key = reason.split(" ")[0] if reason.startswith("합계") else reason
+                key = "번호 합계가 역대 가운데 범위 밖" if key == "합계" else key
+                removed[key] = removed.get(key, 0) + 1
+        rows = [(k, round(total * c / samples)) for k, c in sorted(removed.items(), key=lambda kv: -kv[1])]
+        past = self.repeat["unique_combos"] if self.exclude_past else 0
+        if past:
+            rows.insert(0, ("이전 1등 조합과 같음", past))
+        remaining = max(0, round(total * passed / samples) - past)
+        return rows, remaining
+
     # ---------- 뽑기 도구 ----------
 
     def _weighted_pick(self, candidates, weights, k):
@@ -154,8 +180,10 @@ class Generator:
 
     # ---------- 공개 함수 ----------
 
-    def generate(self, count=5, strategy="mix", n_hot=3, n_cold=2,
-                 include=(), exclude=(), max_tries=20000):
+    def generate(self, count=10, strategy="mix", n_hot=3, n_cold=2,
+                 include=(), exclude=(), max_shared=None, max_tries=50000):
+        """max_shared: 이번에 만드는 조합끼리 최대 몇 개 번호까지 겹쳐도 되는지.
+        여러 게임을 살 때 비슷한 조합만 사는 것을 막는다 (None이면 검사 안 함)."""
         if strategy not in STRATEGIES:
             raise ValueError(f"strategy는 {STRATEGIES} 중 하나여야 합니다.")
         include, exclude = list(dict.fromkeys(include)), set(exclude)
@@ -177,6 +205,9 @@ class Generator:
             if key in seen:
                 continue
             reason = self.reject_reason(nums)
+            if reason is None and max_shared is not None and any(
+                    len(set(nums) & set(t.numbers)) > max_shared for t in tickets):
+                reason = f"이번 다른 조합과 {max_shared + 1}개 이상 겹침"
             if reason:
                 reasons[reason] = reasons.get(reason, 0) + 1
                 continue

@@ -1,7 +1,7 @@
 # 로또 통계 분석기 (lotto-analyzer)
 
 역대 로또 6/45 당첨번호를 모아서 수치화하고, 원하는 조건에 맞춰 번호 조합을 무작위로 만들어 주는 프로그램입니다.
-매주 토요일 저녁 9시에 새 회차를 자동으로 받아 통계를 갱신합니다.
+매주 토요일 저녁 9시에 새 회차를 자동으로 받아 통계를 갱신하고, **매주 금요일 저녁 6시에 이번 주 구매용 10게임(만 원어치)을 카카오톡으로 보내 줍니다.**
 
 - 파이썬 3.9 이상, **표준 라이브러리만 사용** (`pip install` 필요 없음)
 - 데이터 출처: 동행복권 공식 조회 API (`https://www.dhlottery.co.kr/common.do?method=getLottoNumber&drwNo=회차`)
@@ -16,6 +16,9 @@
 | 중복이 없거나 확률이 낮으면 이전 당첨번호 전부 제외 | `pick` 1단계 (자동 판단) |
 | 자주 나온/안 나온 번호 섞기 | `pick` 2단계 (기본 mix 전략) |
 | 자주 같이 나온 번호 조합 활용 | `stats`(번호 쌍 TOP), `pick -s pair` |
+| 이번 주 살 10게임 만들기 + 기록 | `weekly` |
+| 금요일 18시 카카오톡으로 받기 | `weekly --send` (+ GitHub Actions 또는 PC 예약 실행) |
+| 지난주 추천 조합이 몇 등이었는지 | `result`, `REPORT.md` 7번 |
 | 한눈에 보는 주간 리포트 | `report` → `REPORT.md` |
 
 ## 따라 하기 (처음 한 번)
@@ -31,11 +34,37 @@ python -m lotto_analyzer stats            # 번호 순서대로
 python -m lotto_analyzer stats --sort     # 많이 나온 순서대로
 python -m lotto_analyzer stats --recent 50  # 최근 50회만
 
-# 3) 번호 만들기
-python -m lotto_analyzer pick
+# 3) 이번 주 살 10게임 만들기
+python -m lotto_analyzer weekly
 ```
 
-`pick` 출력 예시:
+`weekly` 출력 예시:
+
+```
+[1단계] 이전 당첨번호 중복 검사
+  역대 1193회 중 같은 1등 조합이 다시 나온 적: 없음 (0번)
+  판단: 중복이 없음 → 이전 1등 조합 1,193개를 후보에서 전부 제외
+
+[2단계] 당첨 가능성이 낮을 것으로 보는 조합 지우기 (전체 8,145,060개)
+  - 이전 1등 조합과 같음: 약 1,193개
+  - 번호 합계가 역대 가운데 범위 밖: 약 1,280,000개
+  - 3연속 이상 번호 포함: 약 290,000개
+  - ...
+  => 남은 후보 약 6,100,000개
+
+[3단계] 남은 후보에서 10게임 선택 (많이 나온 번호 3 + 덜 나온 번호 2 + 무작위 1, 조합끼리 3개 이하로만 겹침)
+A 09 15 22 24 33 40
+...
+J 03 13 15 16 26 32
+```
+
+- 10게임끼리 번호가 4개 이상 겹치지 않게 골라서, 비슷한 조합에 돈을 몰아 쓰지 않습니다 (`--max-shared`로 조절).
+- 같은 회차에 다시 돌리면 같은 10게임이 나옵니다 (회차 번호를 시드로 사용). 그래서 카톡으로 받은 번호와 `REPORT.md`의 번호가 같습니다.
+- 만든 조합은 `data/picks.json`에 기록되고, 토요일 추첨 뒤 `python -m lotto_analyzer result`로 몇 등인지 확인할 수 있습니다.
+
+`pick`은 전략·필터를 바꿔 가며 실험할 때 씁니다.
+
+`pick` 출력 예시 (`python -m lotto_analyzer pick`):
 
 ```
 [1단계] 이전 당첨번호 중복 검사
@@ -82,7 +111,7 @@ python -m lotto_analyzer pick
 ### 자주 쓰는 조합 예시
 
 ```bash
-python -m lotto_analyzer pick -n 10                    # 10게임
+python -m lotto_analyzer pick -n 5                     # 5게임만
 python -m lotto_analyzer pick --hot 4 --cold 1         # 많이 나온 번호 비중 높이기
 python -m lotto_analyzer pick --hot 0 --cold 4         # 안 나온 번호 위주
 python -m lotto_analyzer pick --recent 30              # 최근 30회 흐름 기준으로 hot/cold 판단
@@ -144,6 +173,88 @@ $trigger = New-ScheduledTaskTrigger -Weekly -DaysOfWeek Saturday -At 9pm
 Register-ScheduledTask -TaskName "LottoWeeklyUpdate" -Action $action -Trigger $trigger
 ```
 
+## 금요일 18시 카카오톡으로 받기
+
+카카오 공식 API의 **'나에게 보내기'** 기능을 씁니다. 내 카카오톡 **'나와의 채팅'**방에 메시지가 옵니다.
+메시지는 2건입니다: ① 요약(회차, 지운 조합 수) ② 10게임 번호.
+
+### 1. 카카오 개발자 앱 만들기 (한 번만, 10분)
+
+카카오 개발자 콘솔은 화면 개편이 잦아서 메뉴 이름이 조금 다를 수 있습니다.
+
+1. https://developers.kakao.com 에 카카오 계정으로 로그인 → **내 애플리케이션** → **애플리케이션 추가하기** (앱 이름 예: `로또알림`)
+2. **앱 키**에서 **REST API 키**를 복사해 둡니다.
+3. **카카오 로그인** 메뉴에서 **활성화 설정을 ON**, **Redirect URI**에 `https://localhost` 를 등록합니다.
+4. **동의항목**에서 **카카오톡 메시지 전송(talk_message)** 을 **선택 동의**로 설정합니다.
+5. **보안** 메뉴의 **Client Secret**이 "사용함"이면 코드 값을 복사해 둡니다 (아니면 건너뜀).
+
+### 2. 내 PC에서 로그인해서 refresh_token 받기 (한 번만)
+
+```bash
+cd lotto-analyzer
+# 윈도우 PowerShell은:  $env:KAKAO_REST_API_KEY="복사한 REST API 키"
+export KAKAO_REST_API_KEY="복사한 REST API 키"
+# Client Secret을 쓰면:  export KAKAO_CLIENT_SECRET="값"
+
+python -m lotto_analyzer kakao login
+```
+
+1. 화면에 나온 주소를 브라우저로 열고 카카오 로그인 → **동의하고 계속하기**
+2. "사이트에 연결할 수 없음"이 떠도 정상입니다. **주소창의 주소 전체**를 복사해서:
+
+```bash
+python -m lotto_analyzer kakao login "https://localhost/?code=......"
+python -m lotto_analyzer kakao test      # 카톡 '나와의 채팅'에 테스트 메시지가 오면 성공
+python -m lotto_analyzer weekly --send   # 10게임 바로 받아 보기
+```
+
+토큰은 `kakao_token.json`에 저장되며 `.gitignore`에 들어 있어 **저장소에 올라가지 않습니다.** 로그인 결과로 나온 refresh_token 값은 3단계에서 씁니다.
+
+### 3-A. GitHub Actions로 매주 자동 전송 (PC를 꺼 둬도 됨)
+
+`.github/workflows/lotto-friday-kakao.yml`이 금요일 18:00 KST에 `weekly --send`를 실행하고 `data/picks.json`을 커밋합니다.
+
+GitHub 저장소 → **Settings → Secrets and variables → Actions → New repository secret** 으로 아래를 등록합니다.
+
+| 이름 | 값 |
+|---|---|
+| `KAKAO_REST_API_KEY` | REST API 키 |
+| `KAKAO_REFRESH_TOKEN` | 2단계에서 나온 refresh_token |
+| `KAKAO_CLIENT_SECRET` | (Client Secret을 쓰는 경우만) |
+| `GH_PAT` | (권장) 아래 설명 참고 |
+
+**GH_PAT가 필요한 이유**: 카카오 refresh_token은 약 2개월 유효하고, 만료 1개월 전부터는 쓸 때마다 새 값으로 바뀝니다.
+GH_PAT를 넣어 두면 워크플로가 새 값으로 `KAKAO_REFRESH_TOKEN` 시크릿을 **자동으로 바꿔서 계속 동작**합니다.
+없으면 1~2개월마다 2단계 로그인을 다시 하고 시크릿을 직접 바꿔야 합니다 (그때 Actions 화면에 경고가 뜹니다).
+
+GH_PAT 만들기: GitHub 오른쪽 위 프로필 → **Settings → Developer settings → Personal access tokens → Fine-grained tokens → Generate new token**
+→ Repository access: **Only select repositories → Note** → Permissions: **Secrets: Read and write** → 만든 값을 `GH_PAT` 시크릿으로 등록.
+(토큰 만료일을 1년 정도로 잡고, 만료되면 새로 만들어 바꿔 주세요.)
+
+확인: **Actions** 탭 → `로또 금요일 카톡 추천` → **Run workflow** 를 눌러 바로 카톡이 오는지 봅니다.
+
+주의
+- 예약 실행은 **기본 브랜치에 합친 뒤부터** 동작하고, GitHub 사정으로 **몇 분~수십 분 늦게** 올 수 있습니다. 정확히 18시가 중요하면 3-B를 쓰세요.
+- 이 저장소는 공개 저장소라 `data/picks.json`(추천 번호 기록)과 Actions 실행 로그를 다른 사람도 볼 수 있습니다. 토큰은 시크릿이라 보이지 않습니다.
+
+### 3-B. 내 PC에서 예약 전송
+
+PC가 켜져 있어야 합니다. 2단계를 한 PC에서 설정하세요.
+
+```
+# 리눅스/맥 crontab -e  (PC 시간대 KST)
+0 18 * * 5 cd /경로/Note/lotto-analyzer && (python3 -m lotto_analyzer update; python3 -m lotto_analyzer weekly --send) >> kakao.log 2>&1
+```
+
+```powershell
+# 윈도우 PowerShell
+$action  = New-ScheduledTaskAction -Execute "python" -Argument "-m lotto_analyzer weekly --send" -WorkingDirectory "C:\경로\Note\lotto-analyzer"
+$trigger = New-ScheduledTaskTrigger -Weekly -DaysOfWeek Friday -At 6pm
+Register-ScheduledTask -TaskName "LottoFridayKakao" -Action $action -Trigger $trigger
+```
+
+PC에서는 새 refresh_token이 나오면 `kakao_token.json`에 자동 저장되므로 따로 할 일이 없습니다.
+
 ## API가 막혔을 때: CSV로 넣기
 
 동행복권 사이트에서 회차별 당첨번호를 엑셀로 받은 뒤 아래 형식의 CSV로 저장해서 넣을 수 있습니다.
@@ -164,13 +275,20 @@ python -m lotto_analyzer import-csv lotto.csv
 | `lotto_analyzer/fetch.py` | API 조회, 증분 수집, `data/draws.json` 저장 |
 | `lotto_analyzer/stats.py` | 중복 당첨 검사·제외 판단(`repeat_check`), 출현 횟수, 미출현 기간, 번호 쌍/3개 묶음, 같은 조합 재등장, 홀짝·합계·연속번호 분포 |
 | `lotto_analyzer/generator.py` | 1단계 이전 당첨번호 제외 + 2단계 전략별 번호 생성·모양 필터 |
+| `lotto_analyzer/weekly.py` | 이번 주 10게임 만들기, `data/picks.json` 기록, 지난 추천 결과 확인, 카톡 문구 |
+| `lotto_analyzer/kakao.py` | 카카오 로그인·토큰 갱신·나에게 보내기 |
 | `lotto_analyzer/report.py` | `REPORT.md` 생성 |
 | `lotto_analyzer/cli.py` | 명령줄 명령 |
-| `tests/test_lotto.py` | 테스트 (`python -m unittest discover -s tests`) |
+| `tests/` | 테스트 (`python -m unittest discover -s tests`) |
 
 ## 꼭 알아 둘 점
 
-로또는 매 회 독립적으로 추첨하기 때문에 **어떤 조합이든 1등 확률은 8,145,060분의 1로 똑같습니다.**
-"많이 나온 번호"가 앞으로도 더 잘 나오거나, "안 나온 번호"가 곧 나올 차례인 것은 아닙니다.
-이 프로그램의 통계와 필터는 확률을 높여 주는 게 아니라, **번호를 고르는 나만의 기준을 데이터로 만들어 보는 도구**입니다.
-대신 "남들이 많이 고르는 모양(연속번호, 한 줄 찍기 등)을 피하면 당첨 시 나눠 가질 사람이 줄어든다"는 점에서는 필터가 의미가 있습니다.
+이 프로그램의 방식은 "**당첨 가능성이 낮을 것으로 보는 조합을 먼저 지우고, 남은 것 중에서 고른다**"입니다.
+다만 숫자로 정확히 말하면, 로또는 매 회 독립적으로 추첨하기 때문에 **남은 조합 하나하나의 1등 확률도 8,145,060분의 1로 지우기 전과 같습니다.**
+예를 들어 "합계가 너무 작은 조합"이 역대에 드물게 나온 이유는 그런 조합 자체가 전체에서 적기 때문이지, 그 조합 하나가 덜 뽑히기 때문은 아닙니다.
+그래서 10게임을 사면 1등 확률은 어떤 방식으로 골라도 10 ÷ 8,145,060 입니다.
+
+그래도 이 방식이 의미 있는 부분:
+- **같은 조합 중복 구매 방지**: 10게임이 서로 겹치지 않게 퍼뜨립니다.
+- **당첨금을 나눠 가질 가능성 줄이기**: 연속번호, 한쪽에 몰린 번호, 이전 당첨번호 같은 모양은 사람들이 일부러 많이 고릅니다. 이런 조합을 피하면 같은 등수에 당첨됐을 때 나눠 가질 사람이 줄어 받는 금액이 커질 수 있습니다.
+- **나만의 기준을 데이터로 기록**: `data/picks.json`과 `result`로 매주 어떤 결과가 나왔는지 쌓아 볼 수 있습니다.

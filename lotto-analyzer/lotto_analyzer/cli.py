@@ -5,15 +5,19 @@
   check 1 2 3 4 5 6    내 조합이 역대에 몇 등까지 맞았는지 확인
   pick                 조건에 맞는 번호 조합 만들기
   report               Markdown 리포트 파일 만들기
+  weekly [--send]      이번 주 구매용 10게임 만들고 기록 (--send: 카카오톡 전송)
+  result [--send]      지난 추천 조합의 당첨 결과 확인
+  kakao login|test     카카오톡 나에게 보내기 설정
   import-csv 파일      CSV(회차,날짜,번호1~6,보너스)로 데이터 넣기 (API가 막혔을 때)
 """
 
 import argparse
 import csv
+import os
 import sys
 from pathlib import Path
 
-from . import fetch, stats
+from . import fetch, kakao, stats, weekly
 from .generator import STRATEGIES, Filters, Generator
 from .report import build_report
 
@@ -151,6 +155,75 @@ def cmd_report(args):
     print(f"리포트를 {args.out}에 저장했습니다.")
 
 
+def cmd_weekly(args):
+    draws = _load(args)
+    picks = weekly.make_weekly_picks(draws, count=args.count, max_shared=args.max_shared)
+    print("\n[1단계] 이전 당첨번호 중복 검사")
+    for line in picks["repeat_lines"]:
+        print("  " + line)
+    print("\n[2단계] 당첨 가능성이 낮을 것으로 보는 조합 지우기 (전체 8,145,060개, 먼저 걸린 조건 기준 추정)")
+    for reason, n in picks["removed"]:
+        print(f"  - {reason}: 약 {n:,}개")
+    print(f"  => 남은 후보 약 {picks['remaining']:,}개")
+    print(f"\n[3단계] 남은 후보에서 {len(picks['tickets'])}게임 선택 "
+          f"(많이 나온 번호 3 + 덜 나온 번호 2 + 무작위 1, 조합끼리 {args.max_shared}개 이하로만 겹침)\n")
+    message = weekly.format_message(picks)
+    print(message)
+    if not args.no_save:
+        weekly.save_picks(picks, args.picks)
+        print(f"\n{picks['round']}회 추천 조합을 {args.picks}에 기록했습니다.")
+    if args.send:
+        client = kakao.KakaoClient()
+        n = sum(client.send_long_text(part) for part in weekly.format_message_parts(picks))
+        print(f"카카오톡으로 {n}건 보냈습니다.")
+        _report_new_refresh_token(client)
+
+
+def cmd_result(args):
+    draws = _load(args)
+    results = weekly.check_results(draws, weekly.load_picks(args.picks))
+    if not results:
+        print("아직 결과를 확인할 추천 기록이 없습니다 (추첨 전이거나 weekly를 실행한 적 없음).")
+        return
+    for rnd, draw, rows in results[-args.last:]:
+        print()
+        print(weekly.format_result_message(rnd, draw, rows))
+    if args.send:
+        rnd, draw, rows = results[-1]
+        client = kakao.KakaoClient()
+        client.send_long_text(weekly.format_result_message(rnd, draw, rows))
+        print("\n카카오톡으로 보냈습니다.")
+        _report_new_refresh_token(client)
+
+
+def _report_new_refresh_token(client):
+    """카카오가 refresh_token을 새로 줬으면 GitHub Actions가 시크릿을 갱신할 수 있게 파일로 남긴다.
+    (내 PC에서는 kakao_token.json에 자동 저장되므로 따로 할 일 없음)"""
+    out = os.environ.get("KAKAO_NEW_REFRESH_TOKEN_FILE")
+    if client.new_refresh_token and out:
+        Path(out).write_text(client.new_refresh_token, encoding="utf-8")
+        print("카카오 refresh_token이 새로 발급되었습니다.")
+
+
+def cmd_kakao(args):
+    client = kakao.KakaoClient()
+    if args.action == "login":
+        if not args.code:
+            print("1) 아래 주소를 브라우저(PC)에서 열고 카카오 로그인 → '동의하고 계속하기'를 누르세요.\n")
+            print("   " + client.authorize_url() + "\n")
+            print("2) 페이지가 열리지 않는다고 나와도 정상입니다. 주소창의 주소 전체를 복사해서")
+            print("   python -m lotto_analyzer kakao login \"복사한주소\"  로 다시 실행하세요.")
+            return
+        refresh = client.login(args.code)
+        print(f"로그인 완료. 토큰을 {client.token_file}에 저장했습니다 (저장소에는 올라가지 않음).")
+        print("\nGitHub Actions로 보내려면 아래 값을 저장소 시크릿 KAKAO_REFRESH_TOKEN에 넣으세요:")
+        print(refresh)
+    elif args.action == "test":
+        client.send_text("로또 분석기 카카오톡 연결 테스트입니다.")
+        print("테스트 메시지를 보냈습니다. 카카오톡 '나와의 채팅'을 확인하세요.")
+        _report_new_refresh_token(client)
+
+
 def cmd_import_csv(args):
     draws = {d["round"]: d for d in fetch.load_draws(args.data)}
     with open(args.file, encoding="utf-8-sig", newline="") as f:
@@ -187,7 +260,7 @@ def build_parser():
     s.set_defaults(func=cmd_check)
 
     s = sub.add_parser("pick", help="번호 조합 만들기")
-    s.add_argument("-n", "--count", type=int, default=5, help="몇 게임 만들지 (기본 5)")
+    s.add_argument("-n", "--count", type=int, default=10, help="몇 게임 만들지 (기본 10)")
     s.add_argument("-s", "--strategy", choices=STRATEGIES, default="mix")
     s.add_argument("--hot", type=int, default=3, help="mix: 많이 나온 번호 몇 개 (기본 3)")
     s.add_argument("--cold", type=int, default=2, help="mix: 덜 나온 번호 몇 개 (기본 2)")
@@ -210,9 +283,28 @@ def build_parser():
     s = sub.add_parser("report", help="Markdown 리포트 만들기")
     s.add_argument("--out", default="REPORT.md")
     s.add_argument("--recent", type=int, default=50)
-    s.add_argument("-n", "--count", type=int, default=5)
+    s.add_argument("-n", "--count", type=int, default=10)
     s.add_argument("--seed", type=int)
     s.set_defaults(func=cmd_report)
+
+    s = sub.add_parser("weekly", help="이번 주 구매용 추천 조합 만들기")
+    s.add_argument("-n", "--count", type=int, default=10, help="게임 수 (기본 10 = 만 원)")
+    s.add_argument("--max-shared", type=int, default=3, help="추천 조합끼리 최대 겹치는 번호 수 (기본 3)")
+    s.add_argument("--picks", default=weekly.PICKS_PATH, help="추천 기록 파일")
+    s.add_argument("--no-save", action="store_true", help="기록하지 않기")
+    s.add_argument("--send", action="store_true", help="카카오톡 나에게 보내기")
+    s.set_defaults(func=cmd_weekly)
+
+    s = sub.add_parser("result", help="지난 추천 조합 당첨 결과")
+    s.add_argument("--picks", default=weekly.PICKS_PATH)
+    s.add_argument("--last", type=int, default=1, help="최근 몇 회차를 볼지")
+    s.add_argument("--send", action="store_true", help="가장 최근 결과를 카카오톡으로 보내기")
+    s.set_defaults(func=cmd_result)
+
+    s = sub.add_parser("kakao", help="카카오톡 설정")
+    s.add_argument("action", choices=("login", "test"))
+    s.add_argument("code", nargs="?", help="login: 로그인 후 주소창 주소 또는 code")
+    s.set_defaults(func=cmd_kakao)
 
     s = sub.add_parser("import-csv", help="CSV로 데이터 넣기")
     s.add_argument("file")
@@ -227,3 +319,6 @@ def main(argv=None):
     except fetch.FetchError as e:
         print(f"데이터 조회 실패: {e}")
         return 2
+    except kakao.KakaoError as e:
+        print(f"카카오톡 오류: {e}")
+        return 3
