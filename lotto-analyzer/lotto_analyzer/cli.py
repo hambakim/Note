@@ -70,13 +70,9 @@ def cmd_stats(args):
     for p, c in stats.pair_frequency(target, top=args.top):
         print(f"  {_fmt(p)} : {c}회")
 
-    dup = stats.duplicate_winning_combos(draws)
-    print("\n[같은 1등 조합 재등장]")
-    if dup:
-        for combo, rounds in dup.items():
-            print(f"  {_fmt(combo)} -> {rounds}")
-    else:
-        print(f"  없음. {len(draws)}회 동안 똑같은 6개 조합이 다시 1등이 된 적은 없습니다.")
+    print("\n[이전 당첨번호 중복 검사]")
+    for line in stats.describe_repeat_check(stats.repeat_check(draws)):
+        print("  " + line)
 
     lo, hi = stats.sum_range(draws)
     odd = stats.shape_distribution(draws, stats.odd_count)
@@ -104,18 +100,21 @@ def cmd_check(args):
 
 def cmd_pick(args):
     draws = _load(args)
+    common = dict(past_policy=args.past, repeat_threshold=args.threshold,
+                  max_overlap_with_past=args.max_overlap)
     if args.no_filter:
-        filters = Filters(exclude_past_winners=not args.allow_past, max_overlap_with_past=6,
-                          odd_range=(0, 6), low_range=(0, 6), sum_coverage=0,
+        filters = Filters(**common, odd_range=(0, 6), low_range=(0, 6), sum_coverage=0,
                           max_run=6, min_decade_spread=1)
     else:
-        filters = Filters(
-            exclude_past_winners=not args.allow_past,
-            max_overlap_with_past=6 if args.allow_past else args.max_overlap,
-            sum_coverage=args.sum_coverage,
-            max_run=args.max_run,
-        )
+        filters = Filters(**common, sum_coverage=args.sum_coverage, max_run=args.max_run)
     gen = Generator(draws, recent=args.recent, pool_size=args.pool, filters=filters, seed=args.seed)
+
+    print("\n[1단계] 이전 당첨번호 중복 검사")
+    for line in stats.describe_repeat_check(gen.repeat):
+        print("  " + line)
+    if args.past != "auto":
+        print(f"  (--past {args.past} 지정: 이전 1등 조합을 {'제외' if gen.exclude_past else '제외하지 않음'})")
+
     try:
         tickets = gen.generate(count=args.count, strategy=args.strategy, n_hot=args.hot,
                                n_cold=args.cold, include=args.include, exclude=args.exclude)
@@ -124,14 +123,15 @@ def cmd_pick(args):
         return 1
 
     basis = f"최근 {args.recent}회" if args.recent else f"전체 {len(draws)}회"
-    print(f"\n[{args.strategy} 전략 / {basis} 기준 / {draws[-1]['round']}회까지 반영]")
+    print(f"\n[2단계] {args.strategy} 전략으로 번호 조합 ({basis} 기준 / {draws[-1]['round']}회까지 반영)")
     if args.strategy == "mix":
         print(f"  많이 나온 번호 {args.hot}개 + 덜 나온·오래 안 나온 번호 {args.cold}개 + 나머지 무작위")
     print(f"  hot 후보: {_fmt(sorted(gen.hot_pool))}")
     print(f"  cold 후보: {_fmt(sorted(gen.cold_pool))}")
     if not args.no_filter:
-        print(f"  필터: 역대 1등 {'허용' if args.allow_past else '제외'}, 합계 {gen.sum_lo}~{gen.sum_hi}, "
-              f"홀짝·고저 쏠림 제외, {args.max_run + 1}연속 이상 제외\n")
+        print(f"  모양 필터: 합계 {gen.sum_lo}~{gen.sum_hi}, 홀짝·고저 쏠림 제외, "
+              f"{args.max_run + 1}연속 이상 제외 (--no-filter로 끄기)")
+    print()
     for i, t in enumerate(tickets, 1):
         tags = []
         if t.hot:
@@ -195,8 +195,12 @@ def build_parser():
     s.add_argument("--pool", type=int, default=15, help="hot/cold 후보 개수 (기본 15)")
     s.add_argument("-i", "--include", type=int, nargs="*", default=[], help="꼭 넣을 번호")
     s.add_argument("-x", "--exclude", type=int, nargs="*", default=[], help="뺄 번호")
-    s.add_argument("--allow-past", action="store_true", help="역대 1등 조합도 허용")
-    s.add_argument("--max-overlap", type=int, default=4, help="역대 1등과 최대 겹침 개수 (기본 4)")
+    s.add_argument("--past", choices=("auto", "exclude", "allow"), default="auto",
+                   help="이전 1등 조합 처리: auto=중복 검사 결과로 결정(기본), exclude=항상 제외, allow=제외 안 함")
+    s.add_argument("--threshold", type=float, default=0.01,
+                   help="auto일 때 다음 회차 중복 확률이 이 값보다 낮으면 제외 (기본 0.01 = 1%%)")
+    s.add_argument("--max-overlap", type=int, default=6,
+                   help="이전 1등과 최대 몇 개까지 겹쳐도 되는지 (기본 6 = 검사 안 함, 예: 4)")
     s.add_argument("--max-run", type=int, default=2, help="연속번호 최대 길이 (기본 2)")
     s.add_argument("--sum-coverage", type=float, default=0.8, help="합계 허용 범위 비율 (기본 0.8, 0=끔)")
     s.add_argument("--no-filter", action="store_true", help="모양 필터 모두 끄기")

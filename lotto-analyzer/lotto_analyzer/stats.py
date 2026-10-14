@@ -122,3 +122,53 @@ def hot_cold(draws, recent=None, size=10):
     hot = ordered[:size]
     cold = sorted(ALL_NUMBERS, key=lambda n: (freq[n], n))[:size]
     return hot, cold, freq
+
+
+# ---- 중복 당첨 검사: 이전 당첨조합을 후보에서 뺄지 결정하는 근거 ----
+
+TOTAL_COMBOS = 8_145_060  # 45개 중 6개를 고르는 경우의 수 (45C6)
+
+
+def repeat_check(draws, threshold=0.01):
+    """역대 1등 조합이 중복된 적이 있는지 검사하고, 이전 당첨조합을 제외할지 판단한다.
+
+    - duplicates            : 두 번 이상 나온 조합 {조합: [회차들]}
+    - unique_combos         : 지금까지 나온 서로 다른 1등 조합 수
+    - p_next_repeat         : 다음 회차가 이전 1등 조합 중 하나와 똑같을 확률 (= 고유 조합 수 / 8,145,060)
+    - p_any_repeat_so_far   : 지금까지 회차 수라면 이론상 한 번이라도 중복이 나왔을 확률 (생일 문제)
+    - exclude               : 중복이 없거나, p_next_repeat가 threshold(기본 1%)보다 낮으면 True
+    """
+    dup = duplicate_winning_combos(draws)
+    unique = len({tuple(d["numbers"]) for d in draws})
+    p_none = 1.0
+    for k in range(len(draws)):
+        p_none *= 1 - k / TOTAL_COMBOS
+    p_next = unique / TOTAL_COMBOS
+    return {
+        "draws": len(draws),
+        "duplicates": dup,
+        "unique_combos": unique,
+        "p_next_repeat": p_next,
+        "p_any_repeat_so_far": 1 - p_none,
+        "exclude": not dup or p_next < threshold,
+    }
+
+
+def describe_repeat_check(rc):
+    """repeat_check 결과를 사람이 읽을 문장 목록으로."""
+    lines = []
+    if rc["duplicates"]:
+        rounds = "; ".join(f"{' '.join(f'{n:02d}' for n in c)} → {', '.join(map(str, r))}회"
+                           for c, r in rc["duplicates"].items())
+        lines.append(f"역대 {rc['draws']}회 중 같은 1등 조합이 다시 나온 적: 있음 ({rounds})")
+    else:
+        lines.append(f"역대 {rc['draws']}회 중 같은 1등 조합이 다시 나온 적: 없음 (0번)")
+    lines.append(f"다음 회차가 이전 1등 조합 {rc['unique_combos']:,}개 중 하나와 같을 확률: "
+                 f"{rc['p_next_repeat']:.4%} (약 {round(1 / rc['p_next_repeat']):,}분의 1)"
+                 if rc["p_next_repeat"] else "이전 1등 조합이 없습니다.")
+    if rc["exclude"]:
+        why = "중복이 없음" if not rc["duplicates"] else "확률이 매우 낮음"
+        lines.append(f"판단: {why} → 이전 1등 조합 {rc['unique_combos']:,}개를 후보에서 전부 제외")
+    else:
+        lines.append("판단: 중복 확률이 기준보다 높음 → 이전 1등 조합을 제외하지 않음")
+    return lines

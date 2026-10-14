@@ -21,7 +21,6 @@ def build_report(draws, recent=50, picks=5, seed=None):
     gap = stats.last_seen_gap(draws)
     hot, cold, _ = stats.hot_cold(draws, size=10)
     r_hot, r_cold, r_freq = stats.hot_cold(draws, recent=recent, size=10)
-    dup = stats.duplicate_winning_combos(draws)
     lo, hi = stats.sum_range(draws)
     now = datetime.now(KST).strftime("%Y-%m-%d %H:%M")
 
@@ -49,12 +48,9 @@ def build_report(draws, recent=50, picks=5, seed=None):
     overdue = sorted(stats.ALL_NUMBERS, key=lambda n: -gap[n])[:10]
     w(f"- 가장 오래 안 나온 10개: " + ", ".join(f"{n:02d}({gap[n]}회)" for n in overdue) + "\n")
 
-    w("## 3. 똑같은 1등 조합이 다시 나온 적이 있나?\n")
-    if dup:
-        for combo, rounds in dup.items():
-            w(f"- `{_fmt(combo)}` → {', '.join(map(str, rounds))}회")
-    else:
-        w(f"- **없습니다.** {len(draws)}회 동안 같은 6개 조합이 두 번 1등이 된 적은 한 번도 없습니다.")
+    w("## 3. 이전 당첨번호가 다시 1등이 된 적이 있나?\n")
+    for line in stats.describe_repeat_check(stats.repeat_check(draws)):
+        w(f"- {line}")
     w("")
 
     w("## 4. 자주 함께 나온 번호\n")
@@ -78,7 +74,7 @@ def build_report(draws, recent=50, picks=5, seed=None):
     w(f"\n번호 합계 가운데 80% 범위: **{lo} ~ {hi}**\n")
 
     w(f"## 6. 이번 주 추천 조합 (mix 전략, {picks}개)\n")
-    w("많이 나온 번호 3개 + 덜 나온/오래 안 나온 번호 2개 + 무작위 1개, 위 필터 적용.\n")
+    w("3번 판단에 따라 이전 1등 조합을 제외한 뒤, 많이 나온 번호 3개 + 덜 나온/오래 안 나온 번호 2개 + 무작위 1개로 만들었습니다.\n")
     for i, t in enumerate(Generator(draws, seed=seed).generate(count=picks), 1):
         w(f"{i}. `{_fmt(t.numbers)}`  (합계 {t.total})")
     w("\n> 로또 추첨은 매 회 독립 시행이라 어떤 조합이든 1등 확률은 8,145,060분의 1로 같습니다. "

@@ -4,7 +4,7 @@ import unittest
 from pathlib import Path
 
 from lotto_analyzer import fetch, stats
-from lotto_analyzer.generator import Generator
+from lotto_analyzer.generator import Filters, Generator
 
 
 def fake_draws(n=300, seed=1):
@@ -77,6 +77,13 @@ class StatsTest(unittest.TestCase):
         self.assertEqual(res["5+bonus"], [2])
         self.assertEqual(res[3], [1, 3])
 
+    def test_repeat_check(self):
+        rc = stats.repeat_check(self.draws)
+        self.assertEqual(rc["unique_combos"], 2)
+        self.assertAlmostEqual(rc["p_next_repeat"], 2 / 8_145_060)
+        self.assertTrue(rc["exclude"])  # 중복은 있지만 확률이 매우 낮음
+        self.assertFalse(stats.repeat_check(self.draws, threshold=0)["exclude"])
+
     def test_shapes(self):
         self.assertEqual(stats.longest_run([1, 2, 3, 10, 12, 13]), 3)
         self.assertEqual(stats.odd_count([1, 2, 3, 4, 5, 6]), 3)
@@ -114,6 +121,25 @@ class GeneratorTest(unittest.TestCase):
     def test_rejects_past_winner(self):
         gen = Generator(self.draws)
         self.assertIsNotNone(gen.reject_reason(self.draws[0]["numbers"]))
+
+    def test_no_repeat_excludes_every_past_winner(self):
+        gen = Generator(self.draws)
+        self.assertFalse(gen.repeat["duplicates"])
+        self.assertTrue(gen.exclude_past)
+        for d in self.draws:
+            self.assertEqual(gen.reject_reason(d["numbers"]), "이전 1등 조합과 같음")
+
+    def test_repeat_with_high_probability_keeps_past(self):
+        # 같은 조합이 두 번 나왔고, 확률 기준을 0으로 두면 제외하지 않는다
+        draws = self.draws + [dict(self.draws[0], round=301)]
+        gen = Generator(draws, filters=Filters(repeat_threshold=0))
+        self.assertTrue(gen.repeat["duplicates"])
+        self.assertFalse(gen.exclude_past)
+        # 기본 기준(1%)에서는 중복이 있어도 확률이 매우 낮아 제외한다
+        self.assertTrue(Generator(draws).exclude_past)
+
+    def test_past_policy_override(self):
+        self.assertFalse(Generator(self.draws, filters=Filters(past_policy="allow")).exclude_past)
 
     def test_bad_input(self):
         gen = Generator(self.draws)

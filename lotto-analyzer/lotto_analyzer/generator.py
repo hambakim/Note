@@ -7,8 +7,9 @@
 - pair   : 자주 함께 나온 번호 쌍 하나를 넣고, 나머지는 출현 횟수 가중치로 채우기
 - random : 완전 무작위 (필터만 적용)
 
-필터(기본 켜짐): 역대 1등 조합 제외, 역대 1등과 5개 이상 겹치는 조합 제외,
-홀짝 6:0/0:6 제외, 고저 6:0/0:6 제외, 합계가 역대 가운데 80% 범위 밖이면 제외,
+1단계 - 중복 검사: 역대 1등 조합이 다시 1등이 된 적이 있는지 확인한다.
+  중복이 없거나 확률이 매우 낮으면(기본 1% 미만) 이전 1등 조합을 후보에서 전부 제외한다.
+2단계 - 모양 필터(기본 켜짐): 홀짝 6:0/0:6 제외, 고저 6:0/0:6 제외, 합계가 역대 가운데 80% 범위 밖이면 제외,
 3연속 이상 번호 제외, 번호대가 2구간 이하로 몰리면 제외.
 """
 
@@ -22,8 +23,9 @@ STRATEGIES = ("mix", "hot", "cold", "pair", "random")
 
 @dataclass
 class Filters:
-    exclude_past_winners: bool = True
-    max_overlap_with_past: int = 4      # 역대 1등과 최대 몇 개까지 겹쳐도 되는지
+    past_policy: str = "auto"           # auto: 중복 검사 결과로 결정 / exclude: 항상 제외 / allow: 제외 안 함
+    repeat_threshold: float = 0.01      # auto일 때 이 확률보다 낮으면 제외
+    max_overlap_with_past: int = 6      # 역대 1등과 최대 몇 개까지 겹쳐도 되는지 (6이면 검사 안 함)
     odd_range: tuple = (1, 5)           # 홀수 개수 허용 범위
     low_range: tuple = (1, 5)           # 저번호(1~22) 개수 허용 범위
     sum_coverage: float = 0.8           # 역대 합계 분포 중 가운데 몇 %를 허용할지 (0이면 끔)
@@ -64,6 +66,10 @@ class Generator:
 
         self.past_sets = [frozenset(d["numbers"]) for d in draws]
         self.past_combos = {tuple(d["numbers"]) for d in draws}
+        # 1단계: 중복 당첨 검사 -> 이전 1등 조합을 제외할지 결정
+        self.repeat = stats.repeat_check(draws, self.filters.repeat_threshold)
+        policy = self.filters.past_policy
+        self.exclude_past = self.repeat["exclude"] if policy == "auto" else policy == "exclude"
         self.sum_lo, self.sum_hi = (
             stats.sum_range(draws, self.filters.sum_coverage)
             if self.filters.sum_coverage
@@ -76,8 +82,8 @@ class Generator:
         """조건에 안 맞으면 이유를, 맞으면 None을 돌려준다."""
         f = self.filters
         nums = sorted(numbers)
-        if f.exclude_past_winners and tuple(nums) in self.past_combos:
-            return "역대 1등 조합과 같음"
+        if self.exclude_past and tuple(nums) in self.past_combos:
+            return "이전 1등 조합과 같음"
         if f.max_overlap_with_past < 6:
             s = set(nums)
             if any(len(s & p) > f.max_overlap_with_past for p in self.past_sets):
