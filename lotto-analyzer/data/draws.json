@@ -19918,5 +19918,21 @@
   "first_prize_amount": 3006515775,
   "first_prize_winners": 10,
   "source": "smok95"
+ },
+ {
+  "round": 1246,
+  "date": "2026-10-17",
+  "numbers": [
+   16,
+   22,
+   23,
+   24,
+   27,
+   28
+  ],
+  "bonus": 6,
+  "first_prize_amount": 1881025430,
+  "first_prize_winners": 16,
+  "source": "smok95"
  }
 ]
