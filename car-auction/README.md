@@ -31,3 +31,14 @@ cd car-auction
 python -m unittest discover -s tests   # 테스트
 python car_alert.py                    # 보낼 매물 미리 보기 (전송 안 함)
 ```
+
+## 카톡 알림 켜기 (한 번만, PC 없이 휴대폰·브라우저로)
+
+1. https://developers.kakao.com → 내 애플리케이션 → 앱 추가 → **REST API 키** 복사
+   - 카카오 로그인 **ON**, Redirect URI `https://localhost` 등록, 동의항목 **카카오톡 메시지 전송(talk_message)** 선택 동의
+2. GitHub **개인 토큰(GH_PAT)** 만들기: GitHub 설정 → Developer settings → Fine-grained tokens → 저장소 `hambakim/Note`만, 권한 **Secrets: Read and write**
+3. 저장소 **Settings → Secrets and variables → Actions** 에 등록: `KAKAO_REST_API_KEY`, `GH_PAT`
+4. 브라우저로 열기 (`REST_API_키`를 내 키로 바꿔서) → 카카오 로그인·동의
+   `https://kauth.kakao.com/oauth/authorize?client_id=REST_API_키&redirect_uri=https://localhost&response_type=code&scope=talk_message`
+5. "사이트에 연결할 수 없음" 화면의 **주소창 주소 전체** 복사 → **Actions → 카카오 로그인 → Run workflow** 에 붙여넣고 바로 실행
+6. 카톡 '나와의 채팅'에 테스트 메시지가 오면 끝. 이후 토큰은 자동 갱신됩니다. (로또 금요일 알림도 같이 동작)
