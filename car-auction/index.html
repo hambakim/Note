@@ -1,0 +1,507 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>경매 매물 알리미</title>
+<meta name="description" content="K3·아반떼 19~20년식, 7만km 이하, 흰색·검정 경매 매물 모아보기">
+<style>
+/* 위: 조건 요약 + 남은 기간 / 가운데: 조건 일치·색상만 다름·전체·지난 매물 탭과 카드 / 아래: 매물 추가 폼, 조건 설정 */
+:root {
+  color-scheme: light;
+  --bg: #f3f4f1; --surface: #fdfdfc; --border: #e0e2dc; --text: #121412; --text-2: #4c514b; --muted: #7b8079;
+  --accent: #1f6f5c; --accent-soft: #e2efea; --warn: #b4610c; --warn-soft: #fbeedd;
+  --bad: #b8342a; --bad-soft: #f8e3e0; --chip: #eceee9;
+  --white-car: #ffffff; --black-car: #1b1c1e;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #111312; --surface: #191c1a; --border: #2c302d; --text: #eef0ec; --text-2: #c0c5bd; --muted: #8b918a;
+    --accent: #4fb89c; --accent-soft: #183129; --warn: #f0a24c; --warn-soft: #36270f;
+    --bad: #f07a6e; --bad-soft: #3a1c19; --chip: #232724;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #111312; --surface: #191c1a; --border: #2c302d; --text: #eef0ec; --text-2: #c0c5bd; --muted: #8b918a;
+  --accent: #4fb89c; --accent-soft: #183129; --warn: #f0a24c; --warn-soft: #36270f;
+  --bad: #f07a6e; --bad-soft: #3a1c19; --chip: #232724;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body {
+  margin: 0; background: var(--bg); color: var(--text); word-break: keep-all; overflow-wrap: anywhere;
+  font: 15px/1.55 -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", sans-serif;
+}
+main { max-width: 760px; margin: 0 auto; padding: 16px 16px 48px; }
+h1 { font-size: 22px; margin: 0; letter-spacing: -0.02em; }
+h2 { font-size: 16px; margin: 0 0 4px; }
+.num { font-variant-numeric: tabular-nums; }
+.sub, .desc { color: var(--muted); font-size: 13px; }
+.desc { color: var(--text-2); margin: 0 0 12px; }
+section { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 16px; margin-bottom: 14px; }
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+header { display: flex; align-items: flex-start; gap: 12px; margin: 8px 0 14px; }
+header > div { flex: 1; }
+.dday { text-align: center; border: 1.5px solid var(--accent); color: var(--accent); border-radius: 12px; padding: 6px 12px; flex: none; }
+.dday b { display: block; font-size: 20px; line-height: 1.2; }
+.dday span { font-size: 11px; }
+
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { background: var(--chip); border-radius: 999px; padding: 3px 10px; font-size: 13px; }
+.chip.pref { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+
+.tabs { display: flex; gap: 4px; background: var(--chip); padding: 4px; border-radius: 12px; margin: 0 0 12px; }
+.tabs button { flex: 1; white-space: nowrap; border: 0; background: none; border-radius: 9px; padding: 8px 4px; font-size: 14px; color: var(--text-2); }
+.tabs button[aria-selected="true"] { background: var(--surface); color: var(--text); font-weight: 700; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+.tabs .count { font-size: 12px; color: var(--muted); margin-left: 2px; }
+
+.card { border: 1px solid var(--border); border-left: 5px solid var(--border); border-radius: 12px; padding: 14px; margin-bottom: 10px; background: var(--surface); }
+.card.match { border-left-color: var(--accent); }
+.card.near { border-left-color: var(--warn); }
+.card.out { opacity: .78; }
+.card-top { display: flex; align-items: center; gap: 10px; }
+.swatch { width: 28px; height: 28px; border-radius: 8px; border: 1px solid var(--border); flex: none; }
+.title { flex: 1; min-width: 0; }
+.title b { font-size: 16px; }
+.title .sub { display: block; }
+.badge { font-size: 12px; font-weight: 700; border-radius: 6px; padding: 2px 8px; flex: none; }
+.badge.match { background: var(--accent-soft); color: var(--accent); }
+.badge.near { background: var(--warn-soft); color: var(--warn); }
+.badge.out { background: var(--chip); color: var(--muted); }
+.facts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 12px 0 10px; }
+.fact { background: var(--bg); border-radius: 8px; padding: 6px 8px; }
+.fact small { display: block; color: var(--muted); font-size: 11px; }
+.fact b { font-size: 15px; }
+.checks { display: flex; flex-wrap: wrap; gap: 6px; font-size: 13px; }
+.checks span { border-radius: 6px; padding: 1px 7px; background: var(--chip); }
+.checks .ok { color: var(--accent); }
+.checks .no { color: var(--bad); background: var(--bad-soft); }
+.checks .warn { color: var(--warn); background: var(--warn-soft); }
+.verdict { margin-top: 10px; padding: 8px 10px; border-radius: 8px; font-size: 14px; background: var(--bg); }
+.verdict b { color: var(--accent); }
+.verdict.over b { color: var(--bad); }
+.note { margin-top: 8px; font-size: 13px; color: var(--text-2); }
+.actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.btn { border: 1px solid var(--border); background: var(--surface); border-radius: 8px; padding: 7px 12px; font-size: 13px; }
+.btn:hover { border-color: var(--accent); color: var(--accent); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 700; }
+.btn.primary:hover { filter: brightness(1.08); color: #fff; }
+.btn.danger:hover { border-color: var(--bad); color: var(--bad); }
+.empty { text-align: center; color: var(--muted); padding: 24px 8px; font-size: 14px; }
+
+.form { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+.form label { display: flex; flex-direction: column; gap: 3px; font-size: 13px; color: var(--text-2); }
+.form .full { grid-column: 1 / -1; }
+.form input, .form select, .form textarea { border: 1px solid var(--border); background: var(--bg); border-radius: 8px; padding: 8px 10px; font-size: 15px; width: 100%; }
+.form .row { display: flex; gap: 14px; flex-wrap: wrap; align-items: center; font-size: 14px; color: var(--text); }
+.form .row label { flex-direction: row; align-items: center; gap: 6px; color: var(--text); font-size: 14px; }
+.form .row input { width: auto; }
+.form-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+details summary { cursor: pointer; font-weight: 700; }
+details[open] summary { margin-bottom: 10px; }
+.help { font-size: 13px; color: var(--text-2); }
+.help ol { padding-left: 20px; margin: 6px 0; }
+.toast { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); background: var(--text); color: var(--bg); padding: 10px 16px; border-radius: 10px; font-size: 14px; max-width: calc(100% - 32px); z-index: 10; }
+@media (max-width: 420px) {
+  .form { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <div>
+      <h1>경매 매물 알리미</h1>
+      <div class="sub">고모부 지인 대리 낙찰용 · 조건에 맞는 차만 골라 보기</div>
+    </div>
+    <div class="dday" id="dday"></div>
+  </header>
+
+  <section>
+    <h2>찾는 조건</h2>
+    <div class="chips" id="criteriaChips"></div>
+  </section>
+
+  <div class="tabs" role="tablist" id="tabs">
+    <button role="tab" data-tab="match">조건 일치<span class="count num"></span></button>
+    <button role="tab" data-tab="near">색상 다름<span class="count num"></span></button>
+    <button role="tab" data-tab="all">전체<span class="count num"></span></button>
+    <button role="tab" data-tab="closed">지난 매물<span class="count num"></span></button>
+  </div>
+  <div id="list"></div>
+
+  <section id="formSection">
+    <h2 id="formTitle">매물 추가</h2>
+    <p class="desc">고모부가 보내준 경매 정보를 넣으면 조건에 맞는지 바로 판정해요. 이 기기에만 저장되고, 모두가 보게 하려면 저장 뒤 <b>GitHub에 올리기</b>를 누르세요.</p>
+    <form class="form" id="form">
+      <label>차종
+        <select name="model"><option>K3</option><option>아반떼</option><option>기타</option></select>
+      </label>
+      <label>트림 <input name="trim" placeholder="럭셔리, 프레스티지…"></label>
+      <label>연식 <input name="year" type="number" inputmode="numeric" min="2000" max="2030" required placeholder="2020"></label>
+      <label>주행거리(km) <input name="mileage" type="number" inputmode="numeric" min="0" required placeholder="54200"></label>
+      <label>색상 <input name="color" required placeholder="흰색, 검정, 블루…" list="colorList"></label>
+      <label>경매일 <input name="auctionDate" type="date"></label>
+      <label>시작가(만원) <input name="startPrice" type="number" inputmode="numeric" min="0" placeholder="930"></label>
+      <label>현재가/낙찰가(만원) <input name="currentPrice" type="number" inputmode="numeric" min="0" placeholder="비워도 됨"></label>
+      <label>내차피해(회) <input name="myDamage" type="number" inputmode="numeric" min="0" placeholder="0"></label>
+      <label>상태
+        <select name="status"><option>예정</option><option>낙찰</option><option>유찰</option><option>패스</option></select>
+      </label>
+      <div class="row full">
+        <label><input type="checkbox" name="frame"> 골격(프레임) 판금·교환 표시</label>
+      </div>
+      <label class="full">경매장 <input name="source" placeholder="코오롱오토옥션" value="코오롱오토옥션"></label>
+      <label class="full">링크 <input name="url" type="url" placeholder="https://…"></label>
+      <label class="full">메모 <textarea name="note" rows="2" placeholder="옵션, 성능점검 특이사항 등"></textarea></label>
+      <datalist id="colorList"><option>흰색</option><option>검정</option><option>회색</option><option>은색</option><option>블루</option></datalist>
+    </form>
+    <div class="form-actions">
+      <button class="btn primary" id="saveBtn">저장</button>
+      <button class="btn" id="cancelBtn" hidden>취소</button>
+    </div>
+  </section>
+
+  <section>
+    <details>
+      <summary>조건·입찰 상한 바꾸기</summary>
+      <form class="form" id="critForm">
+        <label>연식 시작 <input name="yearMin" type="number" inputmode="numeric"></label>
+        <label>연식 끝 <input name="yearMax" type="number" inputmode="numeric"></label>
+        <label>주행거리 상한(km) <input name="mileageMax" type="number" inputmode="numeric"></label>
+        <label>구매 마감일 <input name="deadline" type="date"></label>
+        <label>K3 2019 상한(만원) <input name="K3-2019" type="number" inputmode="numeric"></label>
+        <label>K3 2020 상한(만원) <input name="K3-2020" type="number" inputmode="numeric"></label>
+        <label>아반떼 2019 상한(만원) <input name="아반떼-2019" type="number" inputmode="numeric" placeholder="시세 보고 입력"></label>
+        <label>아반떼 2020 상한(만원) <input name="아반떼-2020" type="number" inputmode="numeric" placeholder="시세 보고 입력"></label>
+      </form>
+      <p class="help">권장 상한 = 연식별 상한 − 골격판금 30만 − 흰색·검정 아님 30만 − 내차피해 2회째부터 1회당 10만. 어림 계산이니 실제 시세를 보고 조정하세요. 이 기기에만 저장돼요.</p>
+      <div class="form-actions">
+        <button class="btn primary" id="critSave">조건 저장</button>
+        <button class="btn" id="critReset">기본값으로</button>
+      </div>
+    </details>
+  </section>
+
+  <section class="help">
+    <h2>알림은 이렇게 와요</h2>
+    <ol>
+      <li>매물을 저장한 뒤 <b>GitHub에 올리기</b> → 열린 편집 화면에서 <code>[</code> 바로 다음 줄에 붙여넣고 커밋</li>
+      <li>올린 매물이 조건에 맞으면(흰색·검정) GitHub가 1~2분 안에 <b>카카오톡 나와의 채팅</b>으로 보내요. 로또 알림과 같은 카톡 설정을 써요.</li>
+      <li>같은 차는 한 번만 알려요. 경매가 끝나면 상태를 낙찰·유찰·패스로 바꿔 두세요.</li>
+    </ol>
+    <p>코오롱 같은 딜러 경매장은 회원 로그인이 필요해서 매물을 자동으로 가져올 수 없어요. 고모부께 받은 목록을 여기에 넣는 방식이에요.</p>
+  </section>
+</main>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+const REPO_EDIT_URL = "https://github.com/hambakim/Note/edit/main/car-auction/data/listings.json";
+const LOCAL_KEY = "car-auction.local";
+const CRIT_KEY = "car-auction.criteria";
+const TAB_KEY = "car-auction.tab";
+
+// car_alert.py와 같은 규칙 (바꾸면 두 곳 같이)
+const COLOR_ALIASES = {
+  "흰색": ["흰", "화이트", "백색", "white", "펄", "스노우"],
+  "검정": ["검정", "검은", "블랙", "흑색", "black"],
+};
+const MODEL_ALIASES = { "K3": ["k3"], "아반떼": ["아반떼", "avante", "elantra"] };
+const SWATCH = { "흰색": "var(--white-car)", "검정": "var(--black-car)", "회색": "#8a8d90", "은색": "#c4c7ca",
+  "블루": "#2f5fa8", "파랑": "#2f5fa8", "빨강": "#b3302a", "레드": "#b3302a" };
+
+const store = {
+  get(key, fallback) { try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; } catch { return fallback; } },
+  set(key, value) { try { localStorage.setItem(key, JSON.stringify(value)); } catch {} },
+  del(key) { try { localStorage.removeItem(key); } catch {} },
+};
+
+let baseCrit = null, crit = null, shared = [], local = store.get(LOCAL_KEY, []), editingId = null;
+let tab = store.get(TAB_KEY, "match");
+
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const man = (v) => (v == null || v === "" ? "-" : `${Number(v).toLocaleString("ko-KR")}만`);
+const km = (v) => (v == null ? "-" : `${(v / 10000).toFixed(1).replace(/\.0$/, "")}만km`);
+const today = () => new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10); // 한국 날짜
+
+function normBy(aliases, value) {
+  const v = String(value || "").toLowerCase().replace(/\s/g, "");
+  for (const [name, keys] of Object.entries(aliases)) if (keys.some((k) => v.includes(k))) return name;
+  return value || "";
+}
+
+function evaluate(item) {
+  const model = normBy(MODEL_ALIASES, item.model);
+  const color = normBy(COLOR_ALIASES, item.color);
+  const year = Number(item.year) || 0;
+  const checks = {
+    model: crit.models.includes(model),
+    year: year >= crit.yearMin && year <= crit.yearMax,
+    mileage: item.mileage != null && item.mileage <= crit.mileageMax,
+  };
+  const colorRank = crit.colorsPreferred.includes(color) ? 1 : crit.colorsOk.includes(color) ? 2 : 0;
+  const level = !(checks.model && checks.year && checks.mileage) ? "out" : colorRank ? "match" : "near";
+
+  let cap = null;
+  const base = crit.maxBid[`${model}-${year}`];
+  if (base) {
+    const d = crit.deductions;
+    cap = base - (item.frame ? d.frame : 0) - (colorRank === 0 ? d.otherColor : 0)
+      - Math.max(0, (item.myDamage || 0) - 1) * d.perExtraAccident;
+  }
+  return { model, color, colorRank, checks, level, cap };
+}
+
+function isClosed(item) {
+  return ["낙찰", "유찰", "패스"].includes(item.status) || (!!item.auctionDate && item.auctionDate < today());
+}
+
+function allItems() {
+  return [...local.map((i) => ({ ...i, local: true })), ...shared];
+}
+
+function renderHeader() {
+  const days = Math.ceil((new Date(crit.deadline) - new Date(today())) / 86400e3);
+  $("#dday").innerHTML = days >= 0
+    ? `<b class="num">D-${days}</b><span>${esc(crit.deadline.slice(5).replace("-", "/"))} 마감</span>`
+    : `<b>마감</b><span>${esc(crit.deadline)}</span>`;
+  const chips = [
+    ...crit.models.map((m) => `<span class="chip">${esc(m)}</span>`),
+    `<span class="chip num">${crit.yearMin}~${crit.yearMax}년식</span>`,
+    `<span class="chip num">${km(crit.mileageMax)} 이하</span>`,
+    ...crit.colorsPreferred.map((c) => `<span class="chip pref">${esc(c)} 1순위</span>`),
+    ...crit.colorsOk.map((c) => `<span class="chip pref">${esc(c)} 2순위</span>`),
+  ];
+  $("#criteriaChips").innerHTML = chips.join("");
+}
+
+function card(item) {
+  const ev = evaluate(item);
+  const price = item.currentPrice ?? item.startPrice;
+  const label = { match: ev.colorRank === 1 ? "일치 · 1순위" : "일치 · 2순위", near: "색상만 다름", out: "조건 밖" }[ev.level];
+  const mark = (ok, text) => `<span class="${ok ? "ok" : "no"}">${ok ? "✓" : "✗"} ${esc(text)}</span>`;
+  const checks = [
+    mark(ev.checks.model, ev.model || "차종"),
+    mark(ev.checks.year, `${item.year}년식`),
+    mark(ev.checks.mileage, km(item.mileage)),
+    ev.colorRank ? `<span class="ok">✓ ${esc(ev.color)}</span>` : `<span class="warn">△ ${esc(item.color || "색상?")}</span>`,
+    item.frame ? `<span class="warn">⚠ 골격판금</span>` : "",
+    item.myDamage >= 2 ? `<span class="warn">⚠ 내차피해 ${item.myDamage}회</span>` : "",
+    item.ownerChanges >= 2 ? `<span class="warn">⚠ 소유자변경 ${item.ownerChanges}회</span>` : "",
+  ].join("");
+
+  let verdict = "";
+  if (ev.level !== "out") {
+    if (ev.cap == null) {
+      verdict = `<div class="verdict">이 연식의 입찰 상한이 비어 있어요. 아래 <b>조건·입찰 상한 바꾸기</b>에서 넣어 주세요.</div>`;
+    } else if (item.status === "낙찰" && item.currentPrice) {
+      verdict = `<div class="verdict">낙찰가 <b class="num">${man(item.currentPrice)}원</b> · 권장 상한 ${man(ev.cap)}원</div>`;
+    } else {
+      const over = price != null && price > ev.cap;
+      verdict = `<div class="verdict${over ? " over" : ""}">권장 상한 <b class="num">${man(ev.cap)}원</b> → ${
+        over ? "지금 가격이 상한을 넘었어요. 패스 추천" : "상한까지만 입찰 부탁드리기"}</div>`;
+    }
+  }
+
+  const sub = [item.source, item.auctionDate && `경매 ${item.auctionDate.slice(5).replace("-", "/")}`, item.status]
+    .filter(Boolean).map(esc).join(" · ");
+  const actions = [
+    ev.level !== "out" ? `<button class="btn" data-act="msg" data-id="${esc(item.id)}">고모부께 보낼 문자 복사</button>` : "",
+    item.url ? `<a class="btn" href="${esc(item.url)}" target="_blank" rel="noopener">매물 보기</a>` : "",
+    item.local ? `<button class="btn" data-act="edit" data-id="${esc(item.id)}">수정</button>
+      <button class="btn" data-act="github" data-id="${esc(item.id)}">GitHub에 올리기</button>
+      <button class="btn danger" data-act="del" data-id="${esc(item.id)}">삭제</button>` : "",
+  ].join("");
+
+  return `<article class="card ${ev.level}">
+    <div class="card-top">
+      <span class="swatch" style="background:${SWATCH[ev.color] || "var(--chip)"}" aria-hidden="true"></span>
+      <div class="title"><b>${esc(item.year)} ${esc(ev.model)} ${esc(item.trim || "")}</b><span class="sub">${sub}${item.local ? " · 내 기기" : ""}</span></div>
+      <span class="badge ${ev.level}">${label}</span>
+    </div>
+    <div class="facts">
+      <div class="fact"><small>주행거리</small><b class="num">${item.mileage != null ? item.mileage.toLocaleString("ko-KR") : "-"}km</b></div>
+      <div class="fact"><small>시작가</small><b class="num">${man(item.startPrice)}</b></div>
+      <div class="fact"><small>${item.status === "낙찰" ? "낙찰가" : "현재가"}</small><b class="num">${man(item.currentPrice)}</b></div>
+    </div>
+    <div class="checks">${checks}</div>
+    ${verdict}
+    ${item.note ? `<div class="note">${esc(item.note)}</div>` : ""}
+    ${actions ? `<div class="actions">${actions}</div>` : ""}
+  </article>`;
+}
+
+function renderList() {
+  const items = allItems().map((i) => ({ item: i, ev: evaluate(i), closed: isClosed(i) }));
+  const groups = {
+    match: items.filter((x) => !x.closed && x.ev.level === "match"),
+    near: items.filter((x) => !x.closed && x.ev.level === "near"),
+    all: items.filter((x) => !x.closed),
+    closed: items.filter((x) => x.closed),
+  };
+  const order = { match: 0, near: 1, out: 2 };
+  const sorted = groups[tab].sort((a, b) => order[a.ev.level] - order[b.ev.level]
+    || (a.ev.colorRank || 9) - (b.ev.colorRank || 9) || (a.item.auctionDate || "9").localeCompare(b.item.auctionDate || "9"));
+
+  document.querySelectorAll("#tabs button").forEach((b) => {
+    b.setAttribute("aria-selected", b.dataset.tab === tab);
+    b.querySelector(".count").textContent = ` ${groups[b.dataset.tab].length}`;
+  });
+  const empty = {
+    match: "아직 조건에 맞는 매물이 없어요. 새 매물이 나오면 아래에서 추가해 주세요.",
+    near: "색상만 다른 매물이 없어요.",
+    all: "진행 중인 매물이 없어요.",
+    closed: "지난 매물이 없어요.",
+  }[tab];
+  $("#list").innerHTML = sorted.length ? sorted.map((x) => card(x.item)).join("") : `<div class="empty">${empty}</div>`;
+}
+
+function render() { renderHeader(); renderList(); }
+
+function toast(text) {
+  const t = $("#toast");
+  t.textContent = text; t.hidden = false;
+  clearTimeout(toast.timer); toast.timer = setTimeout(() => (t.hidden = true), 2600);
+}
+
+async function copy(text) {
+  try { await navigator.clipboard.writeText(text); return true; }
+  catch {
+    const ta = document.createElement("textarea"); ta.value = text; document.body.append(ta); ta.select();
+    const ok = document.execCommand("copy"); ta.remove(); return ok;
+  }
+}
+
+function sharedJson(item) {
+  const { local: _, ...rest } = item;
+  return JSON.stringify({ ...rest, id: rest.id.replace(/^local-/, "") }, null, 2)
+    .split("\n").map((l) => "  " + l).join("\n") + ",";
+}
+
+function bidMessage(item) {
+  const ev = evaluate(item);
+  const parts = [`${item.year} ${ev.model} ${item.trim || ""}`.replace(/\s+$/, ""),
+    `${item.color} / ${item.mileage.toLocaleString("ko-KR")}km`];
+  if (item.auctionDate) parts.push(`${item.auctionDate} ${item.source || ""}`.trim());
+  if (item.startPrice) parts.push(`시작가 ${man(item.startPrice)}원`);
+  const cap = ev.cap ? `${man(ev.cap)}원까지만` : "적당한 가격까지만";
+  return `고모부, 이 차 입찰 부탁드려요.\n${parts.join("\n")}\n${cap} 부탁드리고, 넘어가면 패스해 주세요. 감사합니다!`;
+}
+
+function findItem(id) { return allItems().find((i) => i.id === id); }
+
+$("#list").addEventListener("click", async (e) => {
+  const btn = e.target.closest("button[data-act]");
+  if (!btn) return;
+  const item = findItem(btn.dataset.id);
+  if (!item) return;
+  const act = btn.dataset.act;
+  if (act === "msg") {
+    toast((await copy(bidMessage(item))) ? "문자 내용을 복사했어요. 카톡에 붙여넣으세요." : "복사하지 못했어요.");
+  } else if (act === "edit") {
+    startEdit(item);
+  } else if (act === "del") {
+    if (!confirm("이 매물을 이 기기에서 지울까요?")) return;
+    local = local.filter((i) => i.id !== item.id); store.set(LOCAL_KEY, local); render();
+  } else if (act === "github") {
+    const ok = await copy(sharedJson(item));
+    toast(ok ? "복사했어요. 편집 화면에서 [ 다음 줄에 붙여넣고 Commit 하세요." : "복사하지 못했어요.");
+    window.open(REPO_EDIT_URL, "_blank", "noopener");
+  }
+});
+
+document.querySelectorAll("#tabs button").forEach((b) =>
+  b.addEventListener("click", () => { tab = b.dataset.tab; store.set(TAB_KEY, tab); renderList(); }));
+
+const form = $("#form");
+const numOrNull = (v) => (v === "" || v == null ? null : Number(v));
+
+function startEdit(item) {
+  editingId = item.id;
+  for (const el of form.elements) {
+    if (!el.name) continue;
+    if (el.type === "checkbox") el.checked = !!item[el.name];
+    else el.value = item[el.name] ?? "";
+  }
+  $("#formTitle").textContent = "매물 수정";
+  $("#saveBtn").textContent = "수정 저장";
+  $("#cancelBtn").hidden = false;
+  $("#formSection").scrollIntoView({ behavior: "smooth" });
+}
+
+function resetForm() {
+  editingId = null; form.reset();
+  $("#formTitle").textContent = "매물 추가";
+  $("#saveBtn").textContent = "저장";
+  $("#cancelBtn").hidden = true;
+}
+
+$("#cancelBtn").addEventListener("click", resetForm);
+$("#saveBtn").addEventListener("click", () => {
+  if (!form.reportValidity()) return;
+  const f = Object.fromEntries(new FormData(form));
+  const item = {
+    id: editingId || `local-${Date.now().toString(36)}`,
+    source: f.source.trim(), auctionDate: f.auctionDate, model: f.model, trim: f.trim.trim(),
+    year: Number(f.year), mileage: Number(f.mileage), color: f.color.trim(),
+    startPrice: numOrNull(f.startPrice), currentPrice: numOrNull(f.currentPrice), soldPrice: null,
+    frame: form.elements.frame.checked, myDamage: numOrNull(f.myDamage), otherDamage: null, ownerChanges: null,
+    status: f.status, url: f.url.trim(), note: f.note.trim(),
+  };
+  if (item.status === "낙찰") item.soldPrice = item.currentPrice;
+  local = editingId ? local.map((i) => (i.id === editingId ? item : i)) : [item, ...local];
+  store.set(LOCAL_KEY, local);
+  const ev = evaluate(item);
+  resetForm();
+  tab = isClosed(item) ? "closed" : ev.level === "out" ? "all" : ev.level;
+  store.set(TAB_KEY, tab);
+  render();
+  toast({ match: "조건에 맞아요! 조건 일치 탭에 올렸어요.", near: "색상만 다른 매물이에요.", out: "조건 밖 매물이에요." }[ev.level]);
+  $("#tabs").scrollIntoView({ behavior: "smooth" });
+});
+
+// ---------- 조건 설정 ----------
+const critForm = $("#critForm");
+const BID_KEYS = ["K3-2019", "K3-2020", "아반떼-2019", "아반떼-2020"];
+
+function fillCritForm() {
+  for (const k of ["yearMin", "yearMax", "mileageMax", "deadline"]) critForm.elements[k].value = crit[k];
+  for (const k of BID_KEYS) critForm.elements[k].value = crit.maxBid[k] ?? "";
+}
+
+$("#critSave").addEventListener("click", () => {
+  const e = critForm.elements;
+  const override = {
+    yearMin: Number(e.yearMin.value) || baseCrit.yearMin, yearMax: Number(e.yearMax.value) || baseCrit.yearMax,
+    mileageMax: Number(e.mileageMax.value) || baseCrit.mileageMax, deadline: e.deadline.value || baseCrit.deadline,
+    maxBid: Object.fromEntries(BID_KEYS.map((k) => [k, numOrNull(e[k].value)])),
+  };
+  store.set(CRIT_KEY, override);
+  crit = { ...baseCrit, ...override };
+  render(); toast("조건을 저장했어요. (카톡 알림 조건은 저장소의 criteria.json 기준)");
+});
+$("#critReset").addEventListener("click", () => {
+  store.del(CRIT_KEY); crit = structuredClone(baseCrit); fillCritForm(); render(); toast("기본값으로 돌렸어요.");
+});
+
+async function load() {
+  const [c, l] = await Promise.all([
+    fetch("data/criteria.json", { cache: "no-store" }).then((r) => r.json()),
+    fetch("data/listings.json", { cache: "no-store" }).then((r) => r.json()).catch(() => []),
+  ]);
+  baseCrit = c; shared = l;
+  crit = { ...structuredClone(baseCrit), ...store.get(CRIT_KEY, {}) };
+  fillCritForm(); render();
+}
+load().catch((err) => {
+  $("#list").innerHTML = `<div class="empty">데이터를 불러오지 못했어요. (${esc(err.message)})<br>파일을 직접 열었다면 웹 주소로 열어 주세요.</div>`;
+});
+</script>
+</body>
+</html>

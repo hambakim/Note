@@ -1,0 +1,20 @@
+{
+  "deadline": "2026-11-20",
+  "models": ["K3", "아반떼"],
+  "yearMin": 2019,
+  "yearMax": 2020,
+  "mileageMax": 70000,
+  "colorsPreferred": ["흰색"],
+  "colorsOk": ["검정"],
+  "maxBid": {
+    "K3-2019": 1000,
+    "K3-2020": 1080,
+    "아반떼-2019": null,
+    "아반떼-2020": null
+  },
+  "deductions": {
+    "frame": 30,
+    "otherColor": 30,
+    "perExtraAccident": 10
+  }
+}

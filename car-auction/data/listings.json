@@ -1,0 +1,42 @@
+[
+  {
+    "id": "2026-10-k3-2019-blue",
+    "source": "코오롱오토옥션",
+    "auctionDate": "",
+    "model": "K3",
+    "trim": "럭셔리",
+    "year": 2019,
+    "mileage": 61000,
+    "color": "블루",
+    "startPrice": 960,
+    "currentPrice": null,
+    "soldPrice": null,
+    "frame": true,
+    "myDamage": 1,
+    "otherDamage": null,
+    "ownerChanges": null,
+    "status": "예정",
+    "url": "",
+    "note": "골격판금 표시, 보험사고 1회. 1,000만원 넘으면 패스"
+  },
+  {
+    "id": "2026-10-k3-2015-white",
+    "source": "코오롱오토옥션",
+    "auctionDate": "",
+    "model": "K3",
+    "trim": "럭셔리",
+    "year": 2015,
+    "mileage": 59000,
+    "color": "흰색",
+    "startPrice": 490,
+    "currentPrice": null,
+    "soldPrice": null,
+    "frame": true,
+    "myDamage": 3,
+    "otherDamage": 2,
+    "ownerChanges": 1,
+    "status": "예정",
+    "url": "",
+    "note": "연식 조건 밖 (비교용)"
+  }
+]
