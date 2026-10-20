@@ -1,0 +1,58 @@
+# 카카오톡 알림용 refresh_token을 PC 없이 GitHub에서 받아 시크릿에 저장한다. (로또·경매 알림 공용)
+#
+# 미리 등록할 시크릿: KAKAO_REST_API_KEY, GH_PAT (이 저장소 Secrets 쓰기 권한), (선택) KAKAO_CLIENT_SECRET
+# 1) 브라우저로 아래 주소를 열고 카카오 로그인 → 동의 (REST_API_키 부분을 내 키로 바꿔서)
+#    https://kauth.kakao.com/oauth/authorize?client_id=REST_API_키&redirect_uri=https://localhost&response_type=code&scope=talk_message
+# 2) "사이트에 연결할 수 없음" 화면의 주소창 주소 전체를 복사
+# 3) Actions → 카카오 로그인 → Run workflow 에 붙여넣고 실행 (code는 몇 분 안에 만료되니 바로 실행)
+name: 카카오 로그인
+
+on:
+  workflow_dispatch:
+    inputs:
+      code_url:
+        description: "로그인 후 주소창 주소 전체 (https://localhost/?code=...)"
+        required: true
+
+jobs:
+  login:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: lotto-analyzer
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: code로 토큰 받기 → KAKAO_REFRESH_TOKEN 시크릿 저장
+        env:
+          KAKAO_REST_API_KEY: ${{ secrets.KAKAO_REST_API_KEY }}
+          KAKAO_CLIENT_SECRET: ${{ secrets.KAKAO_CLIENT_SECRET }}
+          CODE_URL: ${{ inputs.code_url }}
+          GH_TOKEN: ${{ secrets.GH_PAT }}
+          TOKEN_FILE: ${{ runner.temp }}/refresh_token
+        run: |
+          if [ -z "$GH_TOKEN" ]; then
+            echo "::error::GH_PAT 시크릿이 없습니다. 받은 토큰을 시크릿에 저장하려면 필요합니다."
+            exit 1
+          fi
+          python - <<'PY'
+          import os
+          from lotto_analyzer.kakao import KakaoClient
+          c = KakaoClient()
+          token = c.login(os.environ["CODE_URL"])
+          open(os.environ["TOKEN_FILE"], "w").write(token)
+          PY
+          gh secret set KAKAO_REFRESH_TOKEN --repo "${{ github.repository }}" < "$TOKEN_FILE"
+          echo "KAKAO_REFRESH_TOKEN 시크릿을 저장했습니다."
+
+      - name: 테스트 메시지 보내기
+        working-directory: car-auction
+        env:
+          KAKAO_REST_API_KEY: ${{ secrets.KAKAO_REST_API_KEY }}
+          KAKAO_CLIENT_SECRET: ${{ secrets.KAKAO_CLIENT_SECRET }}
+          TOKEN_FILE: ${{ runner.temp }}/refresh_token
+        run: KAKAO_REFRESH_TOKEN="$(cat "$TOKEN_FILE")" python car_alert.py --send --test
