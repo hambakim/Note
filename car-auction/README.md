@@ -3,7 +3,7 @@
 K3·아반떼 / 2019~2020년식 / 7만km 이하 / 흰색(1순위)·검정(2순위) 경매 매물을 모아 보고,
 조건에 맞는 차가 올라오면 카카오톡 '나에게 보내기'로 알려 줍니다.
 
-- **웹페이지: https://hambakim.github.io/Note/car-auction/** (main에 합친 뒤부터 열림)
+- **웹페이지: https://hambakim.github.io/Note/car-auction/** (기본 브랜치 `claude/lottery-win-simulator-e9ubtt`에 합친 뒤부터 열림)
 - 딜러 경매장(코오롱 등)은 회원 로그인이 필요해서 자동 수집은 하지 않습니다. 고모부께 받은 매물 정보를 직접 넣는 방식입니다.
 
 ## 쓰는 순서
@@ -21,7 +21,7 @@ K3·아반떼 / 2019~2020년식 / 7만km 이하 / 흰색(1순위)·검정(2순�
 | `data/listings.json` | 모두가 보는 매물 목록 |
 | `data/notified.json` | 카톡으로 이미 보낸 매물 (자동 기록) |
 | `car_alert.py` | 조건 판정 + 카톡 전송 (`--send`) |
-| `.github/workflows/car-auction-kakao.yml` | listings.json이 main에 올라오면 자동 실행 |
+| `.github/workflows/car-auction-kakao.yml` | listings.json이 기본 브랜치에 올라오면 자동 실행 / Actions 탭에서 수동 실행(테스트 전송 가능) |
 
 권장 상한 = 연식별 상한 − 골격판금 30만 − 흰색·검정 아님 30만 − 내차피해 2회째부터 1회당 10만 (어림 계산).
 아반떼 상한은 비워 두었으니 시세를 보고 `criteria.json` 또는 웹페이지 설정에서 넣어 주세요.

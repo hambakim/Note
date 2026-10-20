@@ -5,6 +5,7 @@
 
   python car_alert.py           # 조건에 맞는 새 매물을 화면에만 출력
   python car_alert.py --send    # 카톡으로 보내고 data/notified.json에 기록 (같은 차는 다시 안 보냄)
+  python car_alert.py --send --test   # 연결 확인용 테스트 메시지 한 통 (기록 안 남김)
 
 카톡 설정은 lotto-analyzer와 같은 시크릿(KAKAO_REST_API_KEY, KAKAO_REFRESH_TOKEN)을 그대로 쓴다.
 """
@@ -136,10 +137,37 @@ def find_new_matches(listings, crit, notified, today=None):
     return out
 
 
+def kakao_client():
+    """로또 분석기의 카카오 모듈을 같이 쓴다 (같은 시크릿·토큰 파일)."""
+    sys.path.insert(0, str(HERE.parent / "lotto-analyzer"))
+    from lotto_analyzer.kakao import KakaoClient
+    return KakaoClient()
+
+
+def save_new_token(client):
+    """refresh_token이 새로 나오면 워크플로가 시크릿을 갱신하도록 파일로 넘긴다."""
+    token_file = os.environ.get("KAKAO_NEW_REFRESH_TOKEN_FILE")
+    if token_file and client.new_refresh_token:
+        Path(token_file).write_text(client.new_refresh_token, encoding="utf-8")
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description="경매 매물 조건 알림")
     ap.add_argument("--send", action="store_true", help="카카오톡으로 보내기")
+    ap.add_argument("--test", action="store_true", help="테스트 메시지 한 통만 (기록 안 남김)")
     args = ap.parse_args(argv)
+
+    if args.test:
+        text = ("🚗 경매 매물 알리미 연결 테스트\n"
+                "이 메시지가 보이면 카톡 알림 설정 완료!\n"
+                "조건 일치 매물이 올라오면 이렇게 알려 드려요.")
+        print(text)
+        if args.send:
+            client = kakao_client()
+            client.send_text(text, link=PAGE_URL, button="알리미 열기")
+            save_new_token(client)
+            print("테스트 메시지 전송 완료")
+        return 0
 
     crit = load_json("criteria.json")
     listings = load_json("listings.json")
@@ -156,10 +184,7 @@ def main(argv=None):
     if not args.send:
         return 0
 
-    sys.path.insert(0, str(HERE.parent / "lotto-analyzer"))
-    from lotto_analyzer.kakao import KakaoClient
-
-    client = KakaoClient()
+    client = kakao_client()
     for (item, _), text in zip(matches, messages):
         link = item.get("url") or PAGE_URL
         client.send_long_text(text, link=link, button="매물 보기")
@@ -167,9 +192,7 @@ def main(argv=None):
     (DATA / "notified.json").write_text(json.dumps(notified, ensure_ascii=False, indent=1) + "\n",
                                        encoding="utf-8")
 
-    token_file = os.environ.get("KAKAO_NEW_REFRESH_TOKEN_FILE")
-    if token_file and client.new_refresh_token:
-        Path(token_file).write_text(client.new_refresh_token, encoding="utf-8")
+    save_new_token(client)
     print(f"카톡 {len(matches)}건 전송")
     return 0
 
