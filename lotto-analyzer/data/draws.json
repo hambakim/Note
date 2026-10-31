@@ -19950,5 +19950,21 @@
   "first_prize_amount": 3637439250,
   "first_prize_winners": 8,
   "source": "smok95"
+ },
+ {
+  "round": 1248,
+  "date": "2026-10-31",
+  "numbers": [
+   16,
+   18,
+   27,
+   36,
+   38,
+   42
+  ],
+  "bonus": 22,
+  "first_prize_amount": 1933658450,
+  "first_prize_winners": 15,
+  "source": "네이버"
  }
 ]
