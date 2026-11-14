@@ -19982,5 +19982,21 @@
   "first_prize_amount": 2025045509,
   "first_prize_winners": 14,
   "source": "네이버"
+ },
+ {
+  "round": 1250,
+  "date": "2026-11-14",
+  "numbers": [
+   1,
+   5,
+   18,
+   23,
+   27,
+   28
+  ],
+  "bonus": 8,
+  "first_prize_amount": 3103164459,
+  "first_prize_winners": 9,
+  "source": "네이버"
  }
 ]
